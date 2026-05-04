@@ -4,6 +4,8 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 from django.urls import reverse
 
+from biocraft_core.runtime.scheduler import TaskStatus
+
 
 class DockerPingTests(TestCase):
     def test_docker_ping_reports_import_failures(self):
@@ -31,4 +33,63 @@ class DockerPingTests(TestCase):
         self.assertEqual(
             response.json(),
             {"docker": True, "containers": ["alpha", "beta"]},
+        )
+
+
+class SchedulerPingTests(TestCase):
+    @patch("workbench.views.DockerContainerExecutor")
+    def test_scheduler_ping_returns_dag_result(self, executor_cls):
+        executor = executor_cls.return_value
+        executor.run.side_effect = [
+            SimpleNamespace(
+                exit_code=0,
+                stdout="A: start\n",
+                stderr="",
+                error_message=None,
+            ),
+            SimpleNamespace(
+                exit_code=0,
+                stdout="B: left after A\n",
+                stderr="",
+                error_message=None,
+            ),
+            SimpleNamespace(
+                exit_code=0,
+                stdout="C: right after A\n",
+                stderr="",
+                error_message=None,
+            ),
+        ]
+
+        response = self.client.get(reverse("scheduler_ping"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "succeeded": True,
+                "tasks": {
+                    "A": {
+                        "status": TaskStatus.SUCCESS.value,
+                        "exit_code": 0,
+                        "stdout": "A: start\n",
+                        "stderr": "",
+                        "error": None,
+                    },
+                    "B": {
+                        "status": TaskStatus.SUCCESS.value,
+                        "exit_code": 0,
+                        "stdout": "B: left after A\n",
+                        "stderr": "",
+                        "error": None,
+                    },
+                    "C": {
+                        "status": TaskStatus.SUCCESS.value,
+                        "exit_code": 0,
+                        "stdout": "C: right after A\n",
+                        "stderr": "",
+                        "error": None,
+                    },
+                },
+            },
         )
