@@ -1,3 +1,34 @@
-from django.test import TestCase
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
-# Create your tests here.
+from django.test import TestCase
+from django.urls import reverse
+
+
+class DockerPingTests(TestCase):
+    def test_docker_ping_reports_import_failures(self):
+        with patch("workbench.views.import_module", side_effect=ModuleNotFoundError("distutils")):
+            response = self.client.get(reverse("docker_ping"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["docker"], False)
+        self.assertIn("import failed", response.json()["error"])
+
+    def test_docker_ping_returns_container_names(self):
+        client = Mock()
+        client.ping.return_value = True
+        client.containers.list.return_value = [
+            SimpleNamespace(name="alpha"),
+            SimpleNamespace(name="beta"),
+        ]
+        docker_module = Mock()
+        docker_module.from_env.return_value = client
+
+        with patch("workbench.views.import_module", return_value=docker_module):
+            response = self.client.get(reverse("docker_ping"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {"docker": True, "containers": ["alpha", "beta"]},
+        )
