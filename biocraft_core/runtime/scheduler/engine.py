@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from biocraft_core.runtime.executor import ContainerSpec, DockerContainerExecutor
@@ -10,11 +11,12 @@ from .types import DAGRunResult, TaskNode, TaskResult, TaskStatus
 
 class DAGEngine:
     """
-    v0 调度器:
+    v0.1 调度器:
       - 拓扑分层
       - 同层并行
-      - 任意节点失败 -> 后续层全部 SKIPPED
-      - 不做重试、不做持久化
+      - 节点失败按 RetryPolicy 重试，耗尽后传播中止
+      - 任意节点最终失败 -> 后续层全部 SKIPPED
+      - 不做持久化
     """
 
     def __init__(self, executor: DockerContainerExecutor, max_workers: int = 4):
@@ -45,6 +47,19 @@ class DAGEngine:
         return DAGRunResult(results=results)
 
     def _run_one(self, node: TaskNode) -> TaskResult:
+        policy = node.retry
+        result: TaskResult | None = None
+
+        for attempt in range(policy.max_attempts):
+            result = self._execute_once(node)
+            if result.status == TaskStatus.SUCCESS:
+                return result
+            if attempt < policy.max_attempts - 1:
+                time.sleep(policy.delay_seconds)
+
+        return result  # type: ignore[return-value]
+
+    def _execute_once(self, node: TaskNode) -> TaskResult:
         try:
             exec_result = self.executor.run(
                 ContainerSpec(

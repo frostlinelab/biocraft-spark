@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from workbench.views import docker_ping, executor_ping, home, scheduler_ping
+from workbench.views import docker_ping, executor_ping, home, plugin_ping, scheduler_ping
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -27,4 +27,6 @@ urlpatterns = [
     path("debug/ping-executor", executor_ping),
     path("debug/ping-scheduler/", scheduler_ping, name="scheduler_ping"),
     path("debug/ping-scheduler", scheduler_ping),
+    path("debug/ping-plugin/", plugin_ping, name="plugin_ping"),
+    path("debug/ping-plugin", plugin_ping),
 ]

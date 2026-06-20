@@ -6,9 +6,10 @@ from .errors import (
     MissingDependencyError,
     SchedulerError,
 )
-from .types import DAGRunResult, TaskNode, TaskResult, TaskStatus
+from .types import DAGRunResult, RetryPolicy, TaskNode, TaskResult, TaskStatus
 
 __all__ = [
+    "RetryPolicy",
     "TaskNode",
     "TaskResult",
     "TaskStatus",

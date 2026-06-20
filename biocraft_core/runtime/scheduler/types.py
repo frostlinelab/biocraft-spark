@@ -14,6 +14,12 @@ class TaskStatus(str, Enum):
 
 
 @dataclass(frozen=True)
+class RetryPolicy:
+    max_attempts: int = 1  # total attempts including first; 1 = no retry
+    delay_seconds: float = 1.0
+
+
+@dataclass(frozen=True)
 class TaskNode:
     """DAG 中的一个任务节点 = 一次容器执行。"""
 
@@ -22,6 +28,7 @@ class TaskNode:
     command: list[str]
     depends_on: tuple[str, ...] = ()
     env: dict[str, str] = field(default_factory=dict)
+    retry: RetryPolicy = field(default_factory=RetryPolicy)
 
 
 @dataclass
