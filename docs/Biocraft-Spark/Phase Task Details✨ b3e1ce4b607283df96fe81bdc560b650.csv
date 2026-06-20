@@ -1,0 +1,11 @@
+﻿Task name,Task Category,Status,Due Date,Priority,Assigned To
+完成容器执行器（Docker / Podman）,Phase 1 — Core Runtime (https://app.notion.com/p/Phase-1-Core-Runtime-fd639187be2644fdbe0befdddf79c451?pvs=21),Halfway done,,High,
+定义插件格式（YAML + JSON Schema）,Phase 1 — Core Runtime (https://app.notion.com/p/Phase-1-Core-Runtime-fd639187be2644fdbe0befdddf79c451?pvs=21),Not started,,Medium,
+完成 DAG 调度器（并行/条件/重试/恢复）,Phase 1 — Core Runtime (https://app.notion.com/p/Phase-1-Core-Runtime-fd639187be2644fdbe0befdddf79c451?pvs=21),Halfway done,,High,
+完成 Pipeline Builder（基于 React Flow）,Phase 2 — UI & Pipeline (https://app.notion.com/p/Phase-2-UI-Pipeline-3f19d5f46e48474f92e3866475004f5f?pvs=21),Not started,,Medium,
+支持 Prokka / Roary Pipeline,Phase 2 — UI & Pipeline (https://app.notion.com/p/Phase-2-UI-Pipeline-3f19d5f46e48474f92e3866475004f5f?pvs=21),Not started,,High,
+完成基础 UI（Dashboard、任务列表）,Phase 2 — UI & Pipeline (https://app.notion.com/p/Phase-2-UI-Pipeline-3f19d5f46e48474f92e3866475004f5f?pvs=21),Not started,,High,
+搭建 React.js + Tauri 项目脚手架,Phase 2 — UI & Pipeline (https://app.notion.com/p/Phase-2-UI-Pipeline-3f19d5f46e48474f92e3866475004f5f?pvs=21),Not started,,High,
+建立插件市场,Phase 3 — 插件生态 (https://app.notion.com/p/Phase-3-e1b98ac40b27459eb6d4212c65d3476d?pvs=21),Not started,,Medium,
+发布插件 SDK,Phase 3 — 插件生态 (https://app.notion.com/p/Phase-3-e1b98ac40b27459eb6d4212c65d3476d?pvs=21),Not started,,High,
+发布官方插件 3–5 个,Phase 3 — 插件生态 (https://app.notion.com/p/Phase-3-e1b98ac40b27459eb6d4212c65d3476d?pvs=21),Not started,,Medium,

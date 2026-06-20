@@ -12,7 +12,7 @@
 ## 🎯 Goals
 
 - [x]  完成 Core Runtime（容器执行 ✅ · DAG Scheduler ✅ · v0.1 重试 + 插件格式 ✅）
-- [ ]  搭建 Django 主线框架与基础界面（已创建 Django 项目骨架，进入实现阶段）
+- [ ]  搭建 Django 主线框架与基础界面（已创建 Django 项目骨架，并接入 Tauri + Vite 桌面前端验证面板）
 - [ ]  实现 Prokka + Roary Pipeline
 - [ ]  发布插件 SDK & 官方插件
 - [ ]  建立插件市场
@@ -57,6 +57,7 @@
 - **2026-05-04：** 启动 DAG Scheduler v0 设计：在 `biocraft_core/runtime/scheduler/` 下拆分 `types.py` / `errors.py` / `dag.py` / `engine.py`，以 Container Executor 为节点执行单元。v0 范围聚焦最小闭环（拓扑排序 + 并行波次执行，暂不做重试与持久化）；验证接口 `/scheduler-ping/` 跑 3 节点 DAG（A → B、A → C）以确认顺序与并行度。Phase 1 状态推进至 In progress（Container Executor → Halfway done，DAG Scheduler → In progress）。后续 v0.1 接入失败传播与重试，v0.2 接入状态持久化。
 - **2026-05-04：** DAG Scheduler v0 验证通过：`/debug/ping-scheduler` 返回 `succeeded: true`，3 节点 DAG（A → B、A → C）依赖顺序与同层并行度均符合预期，A/B/C 均 `exit_code: 0`。同步完成调试接口规整：所有 ping 接口收敛到 `/debug/` 命名空间（`ping-docker` / `ping-executor` / `ping-scheduler`），保留旧 reverse 名称以兼容现有代码与测试。Phase 1 三大件中两件（容器执行器、DAG 调度器）已打通最小闭环，下一步进入 v0.1（失败传播 + 重试策略）与插件格式（YAML + JSON Schema）定义。
 - **2026-06-20：** Core Runtime v0.1 完成。实现重试策略（新增 `RetryPolicy`、支持 `delay_seconds` 等待以及耗尽后的失败传播逻辑）；定义基于 YAML + JSON Schema 的插件格式，提供 Schema 校验及加载器（`biocraft_core/plugin/`）；新增 `/debug/ping-plugin/` 验证接口实现对插件 YAML 的解析及拓扑顺序的格式验证。Core Runtime 目标三阶段（容器执行 ✅ / DAG 调度 ✅ / v0.1 重试与插件格式 ✅）均已顺利完成。
+- **2026-06-20：** 启动桌面工作台前端。新增 `frontend/` Tauri 2 + Vite + React 项目骨架，提供本地 GUI 验证面板，分别调用 Django 后端 `/debug/ping-docker`、`/debug/ping-executor`、`/debug/ping-scheduler` 与 `/debug/ping-plugin`。Django 增加轻量 CORS middleware，支持桌面前端开发服务从 `127.0.0.1:8000` 读取调试 API；同时完善 `.gitignore`，排除前端构建产物、本地 IDE 设置与 Python 缓存文件。
 
 ## 🛠 Project Phases
 
