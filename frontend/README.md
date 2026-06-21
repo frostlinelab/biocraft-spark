@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# Biocraft Spark — Frontend (Tauri Desktop)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite 8 + Tauri 2 desktop app. The Tauri shell spawns the Django
+backend automatically as a sidecar — you do **not** need Docker for local dev.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js + npm
+- Rust toolchain (`rustc`, `cargo`)
+- Python virtualenv at the repo root (`../.venv`) with backend deps installed:
+  ```bash
+  cd ..
+  python -m venv .venv && source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+- A running Docker engine (e.g. OrbStack) — only needed for the executor /
+  docker features inside the app, not to start the backend.
 
-## React Compiler
+## Run (development)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+npm run tauri dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+This launches Vite on http://localhost:5173 and opens the native window.
+On startup the Rust shell (`src-tauri/src/lib.rs`) spawns the Django backend:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+../.venv/bin/python ../manage.py runserver 127.0.0.1:8000 --noreload
+```
+
+Because the sidecar uses `--noreload`, **changes to Python backend code require
+restarting the app** (close the window and re-run `npm run tauri dev`).
+
+The first `tauri dev` compiles ~350 Rust crates and can take several minutes.
+
+## Build
+
+```bash
+npm run build          # type-check + vite build -> dist/
+npm run tauri build    # bundle the desktop installer
+```
+
+## Web-only preview (no desktop shell)
+
+```bash
+npm run dev            # vite on http://localhost:5173
+```
+
+## Notes
+
+- The root `docker-compose.yml` is an alternative way to run Django in a
+  container (port 8000). Don't run it at the same time as the Tauri sidecar —
+  they both bind 8000. Rebuild with `docker compose up --build` after changing
+  `requirements.txt`.
