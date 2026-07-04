@@ -1,0 +1,52 @@
+name: 🚨 Malicious Plugin Report
+description: Report a plugin hiding a trojan, backdoor, or other malicious behavior
+title: "[Malicious] <plugin name>"
+labels: ["security", "malicious-plugin", "priority:high"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Please note:** If the plugin is still listed and could harm other users, we recommend reporting first via a
+        [private Security Advisory](https://github.com/frostlinelab/biocraft-spark/security/advisories/new)
+        to avoid exposing details that could be exploited. If you're confident public disclosure is safe, continue with this form.
+  - type: input
+    id: plugin-name
+    attributes:
+      label: Plugin name
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+  - type: input
+    id: plugin-link
+    attributes:
+      label: Marketplace link / source
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Suspicious behavior
+      description: What did you observe? (unexpected network connections, file reads/writes, hidden processes, outbound domains, etc.)
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, packet captures, decompiled snippets, suspicious code locations, etc.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: e.g. macOS 14 + OrbStack / Windows 11 + Docker Desktop
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have stopped using the plugin and isolated it as needed
+        - label: The information above is accurate, and I understand false reports can harm others
+          required: true

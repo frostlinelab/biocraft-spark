@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Private Security Report (Security Advisory)
+    url: https://github.com/frostlinelab/biocraft-spark/security/advisories/new
+    about: For security vulnerabilities and malicious plugins, please report privately to avoid disclosing details before a fix is available.
+  - name: 💬 Discussions
+    url: https://github.com/frostlinelab/biocraft-spark/discussions
+    about: For usage questions, ideas, and general Q&A, please use Discussions instead of opening an issue.

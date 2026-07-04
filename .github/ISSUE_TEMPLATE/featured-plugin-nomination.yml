@@ -1,0 +1,45 @@
+name: 🌟 Beautiful Creatures Nomination
+description: Nominate an outstanding plugin to be reviewed by Frostline for the Beautiful Creatures collection
+title: "[Nomination] <plugin name>"
+labels: ["showcase", "beautiful-creatures"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a plugin that impressed you? Nominate it here! ✨
+  - type: input
+    id: plugin-name
+    attributes:
+      label: Plugin name
+    validations:
+      required: true
+  - type: input
+    id: plugin-link
+    attributes:
+      label: Marketplace link / source repository
+      placeholder: https://...
+    validations:
+      required: true
+  - type: input
+    id: author
+    attributes:
+      label: Plugin author
+  - type: textarea
+    id: why
+    attributes:
+      label: Why nominate it
+      description: What makes it great? What pain point does it solve? What stands out about the experience?
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots / demo (optional)
+      description: Drag in images, or paste a GIF / video link
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I confirm this plugin runs correctly and has no known security issues
+          required: true

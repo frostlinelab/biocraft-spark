@@ -1,0 +1,56 @@
+name: 🐛 Bug Report
+description: Report a reproducible problem
+title: "[Bug] <short description>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please provide reproducible details so we can pin down the issue faster.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong? What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / errors
+      description: This is automatically formatted as a code block, no backticks needed
+      render: shell
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - OS:
+        - Container engine (Docker/Podman/OrbStack) and version:
+        - Biocraft-Spark version:
+        - Python version:
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate
+          required: true

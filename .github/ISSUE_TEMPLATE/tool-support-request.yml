@@ -1,0 +1,57 @@
+name: 🧩 Tool Support Request
+description: Ask Frostline to officially support a bioinformatics tool (as an official Tool Adapter plugin)
+title: "[Tool Request] <tool name>"
+labels: ["enhancement", "tool-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing new tool support! Please fill in as much detail as possible to help us evaluate whether to adopt it as an official plugin.
+  - type: input
+    id: tool-name
+    attributes:
+      label: Tool name
+      placeholder: e.g. SPAdes / BWA / Kraken2
+    validations:
+      required: true
+  - type: input
+    id: tool-homepage
+    attributes:
+      label: Homepage / source repository
+      placeholder: https://...
+    validations:
+      required: true
+  - type: dropdown
+    id: plugin-type
+    attributes:
+      label: Desired plugin type
+      options:
+        - Tool Adapter (single-tool wrapper)
+        - Pipeline (multi-step workflow)
+        - Analysis & Visualization
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case / why it's needed
+      description: What problem does this tool solve? What are the typical inputs and outputs?
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: Open-source license
+      placeholder: e.g. MIT / GPL-3.0 / academic-free
+  - type: input
+    id: container
+    attributes:
+      label: Is a container image available (Docker/Podman)?
+      placeholder: e.g. staphb/spades:latest, or "none"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate
+          required: true

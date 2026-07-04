@@ -1,0 +1,62 @@
+name: 📦 Plugin Submission
+description: Submit a plugin you built to be listed on the Biocraft-Spark marketplace
+title: "[Plugin] <plugin name>"
+labels: ["plugin-submission", "marketplace"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Want to get your plugin in front of more people? Fill in the details below to apply for listing.
+        Please read the plugin SDK docs first and make sure it conforms to the plugin format spec (YAML + JSON Schema).
+  - type: input
+    id: plugin-name
+    attributes:
+      label: Plugin name
+    validations:
+      required: true
+  - type: input
+    id: repo
+    attributes:
+      label: Plugin source repository
+      placeholder: https://github.com/...
+    validations:
+      required: true
+  - type: dropdown
+    id: plugin-type
+    attributes:
+      label: Plugin type
+      options:
+        - Tool Adapter
+        - Pipeline
+        - Analysis & Visualization
+    validations:
+      required: true
+  - type: input
+    id: sdk-version
+    attributes:
+      label: Target SDK / Core Runtime version
+      placeholder: e.g. v0.1
+  - type: textarea
+    id: description
+    attributes:
+      label: Plugin summary
+      description: Functionality, inputs/outputs, and the tools or container images it depends on
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: Open-source license
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Compliance checklist
+      options:
+        - label: The plugin includes a valid plugin.yaml that passes JSON Schema validation
+          required: true
+        - label: All third-party dependencies and their licenses are declared
+          required: true
+        - label: The plugin contains no malicious code or undeclared network behavior
+          required: true
+        - label: I have the right to distribute this plugin
+          required: true
