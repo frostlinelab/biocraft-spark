@@ -39,7 +39,7 @@ The desktop GUI (Tauri + React) talks to a Django backend over `localhost:8000`.
 ```
 ┌─────────────────────────────────────────────┐
 │          Desktop Frontend (Tauri + React)   │
-│          Communicates via HTTP localhost     │
+│          Communicates via HTTP localhost    │
 └──────────────────┬──────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────┐
@@ -209,7 +209,7 @@ These endpoints are available in development to verify each runtime layer indepe
 
 ## Contributing
 
-This project is developed by **Divinity Studio**. Contribution guidelines will be published alongside the Phase 3 plugin SDK.
+This project is developed by **Frostline Lab**. Contribution guidelines will be published alongside the Phase 3 plugin SDK.
 
 ---
 
