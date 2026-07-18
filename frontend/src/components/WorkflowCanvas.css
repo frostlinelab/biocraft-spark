@@ -96,6 +96,11 @@
   background: rgba(114, 188, 143, 0.25);
 }
 
+.bc-canvas__btn--running {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .bc-canvas__flow--loading {
   display: flex;
   flex-direction: column;

@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./WorkflowCanvas.css"
-import { fetchPipeline, savePipeline, type PipelineDetail } from "../lib/api"
+import { fetchPipeline, savePipeline, runPipeline, type PipelineDetail } from "../lib/api"
 
 const DEFAULT_NODES: Node[] = [
   {
@@ -67,6 +67,8 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [saveState, setSaveState] = useState<SaveState>("idle")
+  const [runState, setRunState] = useState<"idle" | "running" | "done" | "error">("idle")
+  const [lastRunId, setLastRunId] = useState<number | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isDirty = useRef(false)
 
@@ -167,6 +169,19 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
     setNodes((nds: Node[]) => [...nds, newNode])
   }, [nodes.length, setNodes])
 
+  const handleRun = useCallback(async () => {
+    setRunState("running")
+    const result = await runPipeline(pipelineId)
+    if (result) {
+      setRunState("done")
+      setLastRunId(result.id)
+    } else {
+      setRunState("error")
+    }
+    // Call the external onRun callback if provided
+    if (onRun) onRun()
+  }, [pipelineId, onRun])
+
   const nodeCount = nodes.length
   const edgeCount = edges.length
 
@@ -237,10 +252,11 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
           {onRun && (
             <button
               type="button"
-              className="bc-canvas__btn bc-canvas__btn--run"
-              onClick={onRun}
+              className={`bc-canvas__btn bc-canvas__btn--run${runState === "running" ? " bc-canvas__btn--running" : ""}`}
+              onClick={() => void handleRun()}
+              disabled={runState === "running"}
             >
-              ▶ Run
+              {runState === "running" ? "⟳ Running..." : runState === "done" ? "▶ Run Again" : "▶ Run"}
             </button>
           )}
         </div>

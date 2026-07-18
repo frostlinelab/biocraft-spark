@@ -165,6 +165,19 @@ export async function savePipeline(
   }
 }
 
+export async function runPipeline(id: number): Promise<TaskRunDetail | null> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + `/api/pipelines/${id}/run/`, {
+      method: "POST",
+    })
+    if (status !== 201) return null
+    return data as TaskRunDetail
+  } catch {
+    return null
+  }
+}
+
 // ── Task Runs ────────────────────────────────────────────────────────────────
 
 export async function fetchTaskRuns(pipelineId?: number): Promise<TaskRunSummary[]> {
