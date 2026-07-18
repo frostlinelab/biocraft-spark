@@ -20,6 +20,7 @@ Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-gra
 - [Debug Endpoints](#debug-endpoints)
 - [API Endpoints](#api-endpoints)
 - [Roadmap](#roadmap)
+- [Documentation](#documentation)
 
 ---
 
@@ -148,7 +149,8 @@ biocraft-spark/
 │   │   ├── components/     # AppLayout, Sidebar, Dashboard, WorkflowCanvas, ...
 │   │   └── lib/            # API client
 │   └── src-tauri/          # Rust Tauri shell
-├── docs/                   # Project documentation and roadmap CSVs
+├── docs/                   # Troubleshooting guide
+├── CONTRIBUTING.md         # Plugin development guide
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
@@ -159,31 +161,27 @@ biocraft-spark/
 
 ## Plugin Format
 
-Plugins are YAML files validated against `biocraft_core/plugin/plugin_schema.json`. A plugin describes a pipeline step: the container image to use, its inputs/outputs, and optional retry behavior.
+Plugins are YAML files validated against `biocraft_core/plugin/plugin_schema.json`. Each plugin defines one or more containerized steps with typed inputs/outputs, letting Biocraft automatically route files between tools.
 
 ```yaml
-# example-plugin.yaml
 name: fastqc
 version: "1.0.0"
-image: "biocontainers/fastqc:v0.11.9"
-inputs:
-  - name: reads
-    type: file
-outputs:
-  - name: report
-    type: directory
-retry:
-  max_attempts: 3
-  delay_seconds: 5
+description: Quality control for sequencing reads
+steps:
+  - name: run-fastqc
+    image: biocontainers/fastqc:v0.11.9
+    command: ["fastqc", "-o", "/data/output", "/data/input/*.fastq"]
+    inputs:
+      - pattern: "*.fastq"
+        type: file
+    outputs:
+      - pattern: "*.html"
+        type: file
+      - pattern: "*.zip"
+        type: file
 ```
 
-Load and validate a plugin at runtime:
-
-```python
-from biocraft_core.plugin.loader import load_plugin
-
-plugin = load_plugin("path/to/plugin.yaml")  # raises on schema violation
-```
+> See [CONTRIBUTING.md](CONTRIBUTING.md) for the full plugin development guide, including input/output routing, standard paths, and a complete Prokka → Roary example.
 
 ---
 
@@ -229,9 +227,16 @@ REST API for the workflow frontend:
 
 ---
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Plugin development guide — YAML format, IO routing, container specs |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Common issues — Docker, timeouts, schema validation, scheduler |
+
 ## Contributing
 
-This project is developed by **Frostline Lab**. Contribution guidelines will be published alongside the Phase 3 plugin SDK.
+This project is developed by **Frostline Lab**. See [CONTRIBUTING.md](CONTRIBUTING.md) for the plugin development guide.
 
 ---
 
