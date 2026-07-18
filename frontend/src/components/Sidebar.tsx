@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import "./Sidebar.css"
 
-export type NavView = "dashboard" | "workflows" | "tasks" | "health" | "n8n"
+export type NavView = "dashboard" | "workflows" | "tasks" | "health" | "n8n" | "marketplace"
 
 export interface NavItem {
   key: NavView
@@ -41,6 +41,12 @@ const DEFAULT_ITEMS: NavItem[] = [
     key: "n8n",
     label: "n8n",
     icon: <N8NIcon />,
+    disabled: true,
+  },
+  {
+    key: "marketplace",
+    label: "Marketplace",
+    icon: <MarketplaceIcon />,
     disabled: true,
   },
 ]
@@ -97,6 +103,15 @@ function N8NIcon() {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
+}
+
+function MarketplaceIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   )
 }

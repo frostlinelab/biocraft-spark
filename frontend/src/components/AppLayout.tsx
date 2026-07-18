@@ -39,6 +39,22 @@ export default function AppLayout() {
             </div>
           </div>
         )}
+        {view === "marketplace" && (
+          <div className="bc-layout__placeholder">
+            <div className="bc-placeholder">
+              <div className="bc-placeholder__icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              </div>
+              <h2 className="bc-placeholder__title">Marketplace</h2>
+              <p className="bc-placeholder__text">
+                Browse and install community workflows and plugins.
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
