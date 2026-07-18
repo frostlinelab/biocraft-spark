@@ -94,6 +94,56 @@
 .bc-dash__bar-seg--pending   { background: #6b7280; }
 .bc-dash__bar-seg--failed    { background: #f87171; }
 
+/* ── Utilization ─────────────────────────────────────────── */
+
+.bc-dash__util {
+  margin-bottom: 28px;
+}
+
+.bc-dash__util-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: #1a1a1a;
+}
+
+.bc-dash__util-seg {
+  transition: width 0.3s ease;
+}
+
+.bc-dash__util-seg--succeeded { background: #34d399; }
+.bc-dash__util-seg--running   { background: #60a5fa; }
+.bc-dash__util-seg--pending   { background: #6b7280; }
+.bc-dash__util-seg--failed    { background: #f87171; }
+
+.bc-dash__util-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bc-dash__util-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #888;
+}
+
+.bc-dash__util-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bc-dash__util-dot--succeeded { background: #34d399; }
+.bc-dash__util-dot--running   { background: #60a5fa; }
+.bc-dash__util-dot--pending   { background: #6b7280; }
+.bc-dash__util-dot--failed    { background: #f87171; }
+
 /* Recent runs */
 .bc-dash__recent {
   margin-top: 0;

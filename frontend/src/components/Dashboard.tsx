@@ -119,6 +119,36 @@ export default function Dashboard() {
         <StatTile label="Failed" value={s.status_breakdown.failed} variant="fail" />
       </div>
 
+      {/* Utilization bar */}
+      {s.task_runs_count > 0 && (
+        <div className="bc-dash__util">
+          <h3 className="bc-dash__section-title">Utilization</h3>
+          <div className="bc-dash__util-bar">
+            {(["succeeded", "running", "pending", "failed"] as const).map((st) => {
+              const count = s.status_breakdown[st]
+              const total = s.task_runs_count || 1
+              const pct = Math.round((count / total) * 100)
+              return pct > 0 ? (
+                <div
+                  key={st}
+                  className={`bc-dash__util-seg bc-dash__util-seg--${st}`}
+                  style={{ width: `${pct}%` }}
+                  title={`${STATUS_LABEL[st]}: ${count}`}
+                />
+              ) : null
+            })}
+          </div>
+          <div className="bc-dash__util-legend">
+            {(["succeeded", "running", "pending", "failed"] as const).map((st) => (
+              <span key={st} className="bc-dash__util-item">
+                <span className={`bc-dash__util-dot bc-dash__util-dot--${st}`} />
+                {STATUS_LABEL[st]}: {s.status_breakdown[st]}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Status breakdown bar */}
       <div className="bc-dash__bar">
         {(["succeeded", "running", "pending", "failed"] as const).map((st) => {

@@ -238,7 +238,31 @@ function DetailPanel({
       {d.result_json != null && (
         <div className="bc-detail__result">
           <h4 className="bc-detail__section-title">Result</h4>
-          <pre className="bc-detail__pre">{JSON.stringify(d.result_json, null, 2)}</pre>
+          {"nodes" in (d.result_json as Record<string, unknown>) ? (
+            <div className="bc-detail__steps">
+              {((d.result_json as Record<string, unknown>).nodes as Array<Record<string, unknown>>)?.map(
+                (node: Record<string, unknown>, i: number) => {
+                  const step = node.step as number
+                  const total = node.total as number
+                  const label = node.label as string ?? `Node ${step}`
+                  const nodeStatus = node.status as string ?? "unknown"
+                  return (
+                    <div key={i} className="bc-step">
+                      <span className={`bc-step__badge bc-step__badge--${nodeStatus}`}>
+                        {nodeStatus === "completed" ? "✓" : nodeStatus === "running" ? "⟳" : "?"}
+                      </span>
+                      <span className="bc-step__label">{label}</span>
+                      <span className="bc-step__pos">
+                        Step {step}/{total}
+                      </span>
+                    </div>
+                  )
+                }
+              )}
+            </div>
+          ) : (
+            <pre className="bc-detail__pre">{JSON.stringify(d.result_json, null, 2)}</pre>
+          )}
         </div>
       )}
     </div>
