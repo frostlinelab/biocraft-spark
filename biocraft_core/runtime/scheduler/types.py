@@ -20,6 +20,14 @@ class RetryPolicy:
 
 
 @dataclass(frozen=True)
+class TaskIO:
+    """一个输入或输出声明：pattern + 类型 + 可选的来源 step。"""
+    pattern: str
+    io_type: str = "file"  # "file" | "directory"
+    from_step: str | None = None  # 仅 input 使用；None = 匹配所有上游
+
+
+@dataclass(frozen=True)
 class TaskNode:
     """DAG 中的一个任务节点 = 一次容器执行。"""
 
@@ -28,6 +36,8 @@ class TaskNode:
     command: list[str]
     depends_on: tuple[str, ...] = ()
     env: dict[str, str] = field(default_factory=dict)
+    inputs: tuple[TaskIO, ...] = ()
+    outputs: tuple[TaskIO, ...] = ()
     retry: RetryPolicy = field(default_factory=RetryPolicy)
 
 

@@ -31,6 +31,48 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["pattern"],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "上游 step 名称；不填则匹配所有上游依赖"
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "文件 glob 模式，如 *.gff"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["file", "directory"],
+                  "default": "file"
+                }
+              }
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["pattern"],
+              "additionalProperties": false,
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "文件 glob 模式，如 *.gff"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["file", "directory"],
+                  "default": "file"
+                }
+              }
+            }
+          },
           "retry": {
             "type": "object",
             "additionalProperties": false,

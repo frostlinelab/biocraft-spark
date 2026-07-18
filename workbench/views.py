@@ -103,10 +103,17 @@ steps:
   - name: step-a
     image: python:3.12-slim
     command: ["python", "-c", "print('step-a')"]
+    outputs:
+      - pattern: "*.txt"
+        type: file
   - name: step-b
     image: python:3.12-slim
     command: ["python", "-c", "print('step-b')"]
     depends_on: ["step-a"]
+    inputs:
+      - from: step-a
+        pattern: "*.txt"
+        type: file
     retry:
       max_attempts: 2
       delay_seconds: 1.0
@@ -122,6 +129,14 @@ steps:
                     "name": n.name,
                     "image": n.image,
                     "depends_on": list(n.depends_on),
+                    "inputs": [
+                        {"pattern": i.pattern, "from": i.from_step, "type": i.io_type}
+                        for i in n.inputs
+                    ],
+                    "outputs": [
+                        {"pattern": o.pattern, "type": o.io_type}
+                        for o in n.outputs
+                    ],
                     "retry": {
                         "max_attempts": n.retry.max_attempts,
                         "delay_seconds": n.retry.delay_seconds,
