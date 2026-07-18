@@ -131,7 +131,7 @@ def pipeline_create(request):
 
 
 @csrf_exempt
-def pipeline_detail(request, pk: int):
+def pipeline_detail(request, pk: str):
     """GET/PUT/DELETE /api/pipelines/<id>/ — get, update, or delete a single pipeline"""
     try:
         p = Pipeline.objects.get(pk=pk)
@@ -171,7 +171,7 @@ def pipeline_detail(request, pk: int):
 
 
 @csrf_exempt
-def pipeline_run(request, pk: int):
+def pipeline_run(request, pk: str):
     """POST /api/pipelines/<id>/run/ — create a new TaskRun and execute it"""
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -306,7 +306,7 @@ def taskrun_list(request):
     pipeline_id = request.GET.get("pipeline_id")
     qs = TaskRun.objects.select_related("pipeline").all()
     if pipeline_id:
-        qs = qs.filter(pipeline_id=int(pipeline_id))
+        qs = qs.filter(pipeline_id=pipeline_id)
     return JsonResponse({
         "task_runs": [
             {
