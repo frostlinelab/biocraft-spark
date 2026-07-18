@@ -148,6 +148,23 @@ export async function createPipeline(body: {
   }
 }
 
+export async function savePipeline(
+  id: number,
+  body: { name?: string; description?: string; yaml_content?: string },
+): Promise<PipelineDetail | null> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + `/api/pipelines/${id}/`, {
+      method: "PUT",
+      body,
+    })
+    if (status !== 200) return null
+    return data as PipelineDetail
+  } catch {
+    return null
+  }
+}
+
 // ── Task Runs ────────────────────────────────────────────────────────────────
 
 export async function fetchTaskRuns(pipelineId?: number): Promise<TaskRunSummary[]> {

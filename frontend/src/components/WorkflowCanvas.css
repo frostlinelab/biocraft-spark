@@ -109,6 +109,32 @@
   font-size: 14px;
 }
 
+/* ── Save indicator ──────────────────────────────────────── */
+
+.bc-save-indicator {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+  transition: color 0.2s ease;
+}
+
+.bc-save-indicator--idle {
+  color: transparent;
+}
+
+.bc-save-indicator--saving {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bc-save-indicator--saved {
+  color: #72bc8f;
+}
+
+.bc-save-indicator--error {
+  color: #e97366;
+}
+
 .bc-canvas__flow {
   flex: 1;
   position: relative;

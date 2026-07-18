@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ReactFlow,
   Background,
@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./WorkflowCanvas.css"
-import { fetchPipeline, type PipelineDetail } from "../lib/api"
+import { fetchPipeline, savePipeline, type PipelineDetail } from "../lib/api"
 
 const DEFAULT_NODES: Node[] = [
   {
@@ -49,6 +49,10 @@ const DEFAULT_EDGES: Edge[] = [
   { id: "e3-4", source: "3", target: "4", animated: true },
 ]
 
+const AUTO_SAVE_MS = 2000
+
+type SaveState = "idle" | "saving" | "saved" | "error"
+
 interface WorkflowCanvasProps {
   pipelineId: number
   onBack: () => void
@@ -62,6 +66,9 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   const [pipelineName, setPipelineName] = useState("")
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
+  const [saveState, setSaveState] = useState<SaveState>("idle")
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isDirty = useRef(false)
 
   // Load pipeline data on mount or when pipelineId changes
   useEffect(() => {
@@ -103,6 +110,36 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
     })
     return () => { cancelled = true }
   }, [pipelineId, setNodes, setEdges])
+
+  // Debounced auto-save whenever nodes or edges change
+  const doSave = useCallback(async () => {
+    setSaveState("saving")
+    const graph = JSON.stringify({ nodes, edges })
+    const result = await savePipeline(pipelineId, { yaml_content: graph })
+    if (result) {
+      setSaveState("saved")
+      setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 1500)
+    } else {
+      setSaveState("error")
+    }
+  }, [pipelineId, nodes, edges])
+
+  useEffect(() => {
+    if (loading) return // Don't save during initial load
+    // Skip the first render which is from loading state -> loaded
+    if (nodes.length === 0) return
+
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    isDirty.current = true
+    setSaveState("idle")
+    saveTimer.current = setTimeout(() => {
+      void doSave()
+    }, AUTO_SAVE_MS)
+
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+    }
+  }, [nodes, edges, loading, doSave])
 
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds: Edge[]) => addEdge(connection, eds)),
@@ -177,6 +214,13 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
           <span className="bc-canvas__pipeline-name">{pipelineName}</span>
         </div>
         <div className="bc-canvas__toolbar-right">
+          {/* Save indicator */}
+          <span className={`bc-save-indicator bc-save-indicator--${saveState}`}>
+            {saveState === "saving" && "Saving..."}
+            {saveState === "saved" && "✓ Saved"}
+            {saveState === "error" && "⚠ Save failed"}
+            {saveState === "idle" && ""}
+          </span>
           <div className="bc-canvas__stats">
             <span className="bc-canvas__stat">
               <span className="bc-canvas__stat-value">{nodeCount}</span>
