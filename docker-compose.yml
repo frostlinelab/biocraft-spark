@@ -3,10 +3,10 @@ services:
     build: .
     container_name: biocraft-spark-web
     ports:
-      - "8000:8000"
+      - "25568:25568"
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       DOCKER_HOST: unix:///var/run/docker.sock
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:25568

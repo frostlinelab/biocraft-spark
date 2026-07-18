@@ -1,0 +1,180 @@
+.bc-canvas {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100vh;
+  background: #121212;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.bc-canvas *,
+.bc-canvas *::before,
+.bc-canvas *::after {
+  box-sizing: border-box;
+}
+
+.bc-canvas__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1a1a1a;
+  flex-shrink: 0;
+}
+
+.bc-canvas__stats {
+  display: flex;
+  gap: 16px;
+}
+
+.bc-canvas__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.bc-canvas__stat-value {
+  font-size: 15px;
+  font-weight: 650;
+  color: #ececec;
+  font-family: Menlo, Consolas, "SF Mono", monospace;
+}
+
+.bc-canvas__stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bc-canvas__btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(211, 168, 124, 0.15);
+  color: #d3a87c;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bc-canvas__btn:hover {
+  background: rgba(211, 168, 124, 0.25);
+}
+
+.bc-canvas__btn:focus-visible {
+  outline: 2px solid #d3a87c;
+  outline-offset: 2px;
+}
+
+.bc-canvas__flow {
+  flex: 1;
+  position: relative;
+}
+
+.bc-canvas__panel {
+  position: absolute;
+  right: 16px;
+  top: 56px;
+  width: 240px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 16px;
+  color: #ececec;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.bc-canvas__panel-title {
+  font-size: 13px;
+  font-weight: 650;
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bc-canvas__panel-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 12.5px;
+}
+
+.bc-canvas__panel-dl dt {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+.bc-canvas__panel-dl dd {
+  margin: 0;
+  color: #ececec;
+}
+
+.bc-canvas__mono {
+  font-family: Menlo, Consolas, "SF Mono", monospace;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ---- React Flow node overrides ---- */
+.bc-canvas .react-flow__node {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #252525;
+  color: #ececec;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 550;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bc-canvas .react-flow__node:hover {
+  border-color: rgba(211, 168, 124, 0.5);
+  box-shadow: 0 2px 12px rgba(211, 168, 124, 0.1);
+}
+
+.bc-canvas .react-flow__node.selected {
+  border-color: #d3a87c;
+  box-shadow: 0 0 0 2px rgba(211, 168, 124, 0.2);
+}
+
+.bc-canvas .react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid #252525;
+}
+
+.bc-canvas .react-flow__handle:hover {
+  background: #d3a87c;
+}
+
+.bc-canvas .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 2;
+}
+
+.bc-canvas .react-flow__edge.selected .react-flow__edge-path {
+  stroke: #d3a87c;
+}
+
+.bc-canvas .react-flow__controls {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bc-canvas .react-flow__controls-button {
+  background: #1e1e1e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  fill: rgba(255, 255, 255, 0.6);
+  width: 32px;
+  height: 32px;
+}
+
+.bc-canvas .react-flow__controls-button:hover {
+  background: #2a2a2a;
+}

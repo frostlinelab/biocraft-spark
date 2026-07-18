@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from workbench.views import docker_ping, executor_ping, home, plugin_ping, scheduler_ping
 
 urlpatterns = [
@@ -29,4 +29,6 @@ urlpatterns = [
     path("debug/ping-scheduler", scheduler_ping),
     path("debug/ping-plugin/", plugin_ping, name="plugin_ping"),
     path("debug/ping-plugin", plugin_ping),
+    # SPA fallback: serve React index.html for any unmatched path
+    re_path(r"^(?:.*)/?$", home),
 ]
