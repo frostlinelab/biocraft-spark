@@ -17,10 +17,19 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, re_path
 from workbench.views import docker_ping, executor_ping, home, plugin_ping, scheduler_ping
+from workbench.api import (
+    dashboard_stats,
+    pipeline_create,
+    pipeline_detail,
+    pipeline_list,
+    taskrun_detail,
+    taskrun_list,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home, name="home"),
+    # Debug endpoints
     path("debug/ping-docker/", docker_ping, name="docker_ping"),
     path("debug/ping-docker", docker_ping),
     path("debug/ping-executor/", executor_ping, name="executor_ping"),
@@ -29,6 +38,13 @@ urlpatterns = [
     path("debug/ping-scheduler", scheduler_ping),
     path("debug/ping-plugin/", plugin_ping, name="plugin_ping"),
     path("debug/ping-plugin", plugin_ping),
+    # REST API
+    path("api/dashboard-stats/", dashboard_stats, name="dashboard_stats"),
+    path("api/pipelines/", pipeline_list, name="pipeline_list"),
+    path("api/pipelines/create/", pipeline_create, name="pipeline_create"),
+    path("api/pipelines/<int:pk>/", pipeline_detail, name="pipeline_detail"),
+    path("api/task-runs/", taskrun_list, name="taskrun_list"),
+    path("api/task-runs/<int:pk>/", taskrun_detail, name="taskrun_detail"),
     # SPA fallback: serve React index.html for any unmatched path
     re_path(r"^(?:.*)/?$", home),
 ]

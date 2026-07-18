@@ -1,17 +1,21 @@
 import { useState } from "react"
 import Sidebar, { type NavView } from "./Sidebar"
+import Dashboard from "./Dashboard"
 import WorkflowCanvas from "./WorkflowCanvas"
+import TaskList from "./TaskList"
 import RuntimeHealthPanel from "./RuntimeHealthPanel"
 import "./AppLayout.css"
 
 export default function AppLayout() {
-  const [view, setView] = useState<NavView>("workflows")
+  const [view, setView] = useState<NavView>("dashboard")
 
   return (
     <div className="bc-layout">
       <Sidebar active={view} onChange={setView} />
       <main className="bc-layout__main">
+        {view === "dashboard" && <Dashboard />}
         {view === "workflows" && <WorkflowCanvas />}
+        {view === "tasks" && <TaskList />}
         {view === "health" && (
           <div className="bc-layout__health">
             <RuntimeHealthPanel pollMs={15000} />

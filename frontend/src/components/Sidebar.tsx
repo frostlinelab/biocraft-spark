@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import "./Sidebar.css"
 
-export type NavView = "workflows" | "health" | "n8n"
+export type NavView = "dashboard" | "workflows" | "tasks" | "health" | "n8n"
 
 export interface NavItem {
   key: NavView
@@ -18,9 +18,19 @@ interface SidebarProps {
 
 const DEFAULT_ITEMS: NavItem[] = [
   {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: <DashboardIcon />,
+  },
+  {
     key: "workflows",
     label: "Workflows",
     icon: <DAGIcon />,
+  },
+  {
+    key: "tasks",
+    label: "Task Runs",
+    icon: <ListIcon />,
   },
   {
     key: "health",
@@ -34,6 +44,30 @@ const DEFAULT_ITEMS: NavItem[] = [
     disabled: true,
   },
 ]
+
+function DashboardIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="9" rx="1.5" />
+      <rect x="14" y="3" width="7" height="5" rx="1.5" />
+      <rect x="14" y="12" width="7" height="9" rx="1.5" />
+      <rect x="3" y="16" width="7" height="5" rx="1.5" />
+    </svg>
+  )
+}
+
+function ListIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
 
 function DAGIcon() {
   return (

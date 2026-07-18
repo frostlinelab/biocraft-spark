@@ -1,0 +1,196 @@
+/* ── Dashboard ──────────────────────────────────────────────────────────────── */
+
+.bc-dash {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 40px;
+}
+
+.bc-dash__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.bc-dash__title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.bc-dash__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+/* Stat tiles */
+.bc-dash__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.bc-stat {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bc-stat--skeleton {
+  min-height: 88px;
+  animation: shimmer 1.5s infinite;
+  background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.bc-stat__value {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.bc-stat__label {
+  font-size: 13px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.bc-stat--pipelines .bc-stat__value { color: #60a5fa; }
+.bc-stat--runs      .bc-stat__value { color: #c084fc; }
+.bc-stat--success   .bc-stat__value { color: #34d399; }
+.bc-stat--fail      .bc-stat__value { color: #f87171; }
+
+/* Status breakdown bar */
+.bc-dash__bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: #1a1a1a;
+}
+
+.bc-dash__bar-seg {
+  transition: width 0.3s ease;
+}
+
+.bc-dash__bar-seg--succeeded { background: #34d399; }
+.bc-dash__bar-seg--running   { background: #60a5fa; }
+.bc-dash__bar-seg--pending   { background: #6b7280; }
+.bc-dash__bar-seg--failed    { background: #f87171; }
+
+/* Recent runs */
+.bc-dash__recent {
+  margin-top: 0;
+}
+
+.bc-dash__section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0 0 12px;
+}
+
+.bc-dash__empty {
+  color: #666;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+/* Table */
+.bc-table-wrap {
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bc-table__row {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.bc-table__row:last-child {
+  border-bottom: none;
+}
+
+.bc-table__head {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #111;
+}
+
+.bc-table__cell {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #d0d0d0;
+  vertical-align: middle;
+}
+
+.bc-table__cell--id {
+  width: 64px;
+}
+
+.bc-table__cell--time {
+  width: 140px;
+  color: #777;
+  font-size: 13px;
+}
+
+.bc-mono {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 13px;
+  color: #999;
+}
+
+/* Status badges */
+.bc-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.bc-badge--succeeded { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+.bc-badge--running   { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.bc-badge--pending   { background: rgba(107, 114, 128, 0.15); color: #9ca3af; }
+.bc-badge--failed    { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+/* Error */
+.bc-dash__error {
+  text-align: center;
+  padding: 48px 24px;
+  color: #f87171;
+}
+
+/* Skeleton */
+.bc-dash__skeleton {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
