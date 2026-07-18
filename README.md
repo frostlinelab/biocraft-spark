@@ -2,9 +2,9 @@
 
 > A local, cross-platform bioinformatics workbench for everyone — no Linux expertise required.
 
-Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-grade tools inside a desktop GUI backed by container isolation. Users define analysis pipelines as plugins; the runtime schedules and executes them in Docker/Podman containers, keeping data local and environments reproducible.
+Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-grade tools inside a desktop GUI backed by container isolation. Users define analysis pipelines as visual workflows; the runtime schedules and executes them in Docker/Podman containers, keeping data local and environments reproducible.
 
-**Status:** Phase 1 (Core Runtime) ✅ complete — Phase 2 (UI & Pipeline) in progress.
+**Status:** Phase 1 (Core Runtime) ✅ complete — Phase 2 (UI & Pipeline) 🔄 in progress.
 
 ---
 
@@ -18,6 +18,7 @@ Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-gra
 - [Project Structure](#project-structure)
 - [Plugin Format](#plugin-format)
 - [Debug Endpoints](#debug-endpoints)
+- [API Endpoints](#api-endpoints)
 - [Roadmap](#roadmap)
 
 ---
@@ -28,7 +29,7 @@ Biocraft-Spark is built around three ideas:
 
 1. **Local-first** — all computation runs on your machine; no data leaves your environment.
 2. **Container-isolated** — every tool runs inside a Docker/Podman container, eliminating dependency conflicts.
-3. **Plugin-driven** — pipelines are described in YAML and validated against a JSON Schema, making it easy to add new tools without touching the core.
+3. **Visual workflow editor** — pipelines are built with a drag-and-drop node editor backed by React Flow, making it easy to compose and reconfigure analysis steps without writing code.
 
 The desktop GUI (Tauri + React) talks to a Django backend over `localhost:8000`. The backend owns the execution engine: a DAG scheduler that topologically sorts pipeline steps and runs independent steps in parallel waves.
 
@@ -73,6 +74,7 @@ The backend container mounts the host Docker socket (`/var/run/docker.sock`) so 
 | Layer | Technology |
 |---|---|
 | Desktop frontend | Tauri 2.11 · React 19 · TypeScript 6 · Vite 8 |
+| Workflow editor | @xyflow/react (React Flow) 12.x — drag-and-drop node editor |
 | Backend framework | Django 6.0.4 · Python |
 | Container runtime | Docker ≥ 7.0 (docker-py SDK) |
 | DAG scheduling | Custom (`biocraft_core/runtime/scheduler/`) |
@@ -139,10 +141,12 @@ biocraft-spark/
 │   │   └── scheduler/      # DAG, Engine (topological sort + parallel waves)
 │   └── plugin/             # YAML loader, JSON Schema validator
 ├── biocraft_spark/         # Django project config (settings, urls, wsgi/asgi)
-├── workbench/              # Django app — views, models, middleware
+├── workbench/              # Django app — views, models, API, middleware
 ├── templates/              # Django HTML templates
 ├── frontend/               # Tauri 2 + Vite + React desktop app
 │   ├── src/                # React components
+│   │   ├── components/     # AppLayout, Sidebar, Dashboard, WorkflowCanvas, ...
+│   │   └── lib/            # API client
 │   └── src-tauri/          # Rust Tauri shell
 ├── docs/                   # Project documentation and roadmap CSVs
 ├── docker-compose.yml
@@ -196,12 +200,30 @@ These endpoints are available in development to verify each runtime layer indepe
 
 ---
 
+## API Endpoints
+
+REST API for the workflow frontend:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/dashboard-stats/` | Aggregate stats (pipeline count, run count, status breakdown) |
+| `GET` | `/api/pipelines/` | List all pipelines |
+| `POST` | `/api/pipelines/create/` | Create a new pipeline |
+| `GET` | `/api/pipelines/<id>/` | Get a single pipeline |
+| `PUT` | `/api/pipelines/<id>/` | Update a pipeline (name, description, graph) |
+| `DELETE` | `/api/pipelines/<id>/` | Delete a pipeline |
+| `POST` | `/api/pipelines/<id>/run/` | Execute a pipeline (creates a TaskRun) |
+| `GET` | `/api/task-runs/` | List task runs (optional `?pipeline_id=` filter) |
+| `GET` | `/api/task-runs/<id>/` | Get a single task run with results |
+
+---
+
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
-| **2 — Django UI & Pipeline** | Django main framework · Pipeline Builder UI · Tauri desktop integration | 🔄 In progress |
+| **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Tauri desktop integration · Multi-workflow management · Task run tracking | 🔄 In progress |
 | **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (Prokka, Roary, …) · Plugin marketplace | ⏳ Planned |
 | **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
 

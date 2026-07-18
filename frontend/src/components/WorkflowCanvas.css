@@ -13,6 +13,12 @@
   box-sizing: border-box;
 }
 
+.bc-canvas__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .bc-canvas__toolbar {
   display: flex;
   align-items: center;
@@ -101,6 +107,117 @@
   cursor: not-allowed;
 }
 
+/* ── Right-side block palette ─────────────────────────────── */
+
+.bc-palette {
+  width: 200px;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.bc-palette__head {
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bc-palette__list {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bc-palette__block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: grab;
+  color: #ececec;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+}
+
+.bc-palette__block:hover {
+  border-color: rgba(211, 168, 124, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bc-palette__block:active {
+  cursor: grabbing;
+  border-color: #d3a87c;
+  box-shadow: 0 2px 12px rgba(211, 168, 124, 0.15);
+}
+
+.bc-palette__block-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(211, 168, 124, 0.12);
+  color: #d3a87c;
+  flex-shrink: 0;
+}
+
+.bc-palette__block-icon--process {
+  background: rgba(114, 188, 143, 0.12);
+  color: #72bc8f;
+}
+
+.bc-palette__block-icon--io {
+  background: rgba(94, 159, 232, 0.12);
+  color: #5e9fe8;
+}
+
+.bc-palette__block-icon--condition {
+  background: rgba(222, 146, 85, 0.12);
+  color: #de9255;
+}
+
+.bc-palette__block-label {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.bc-palette__block-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 400;
+}
+
+/* ── Flow area drop indicator ──────────────────────────────── */
+
+.bc-canvas__flow {
+  flex: 1;
+  position: relative;
+  background: #121212;
+  border: 2px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.bc-canvas__flow--drag-over {
+  border-color: rgba(211, 168, 124, 0.3);
+}
+
 .bc-canvas__flow--loading {
   display: flex;
   flex-direction: column;
@@ -138,11 +255,6 @@
 
 .bc-save-indicator--error {
   color: #e97366;
-}
-
-.bc-canvas__flow {
-  flex: 1;
-  position: relative;
 }
 
 .bc-canvas__panel {

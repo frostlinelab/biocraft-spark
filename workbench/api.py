@@ -57,11 +57,15 @@ def pipeline_create(request):
 
 @csrf_exempt
 def pipeline_detail(request, pk: int):
-    """GET /api/pipelines/<id>/ — get a single pipeline"""
+    """GET/PUT/DELETE /api/pipelines/<id>/ — get, update, or delete a single pipeline"""
     try:
         p = Pipeline.objects.get(pk=pk)
     except Pipeline.DoesNotExist:
         return JsonResponse({"error": "Pipeline not found"}, status=404)
+
+    if request.method == "DELETE":
+        p.delete()
+        return JsonResponse({"deleted": True}, status=200)
 
     if request.method == "PUT":
         try:

@@ -165,6 +165,23 @@ export async function savePipeline(
   }
 }
 
+export async function deletePipeline(id: number): Promise<boolean> {
+  const base = getApiBase()
+  try {
+    const { status } = await fetchJson(base + `/api/pipelines/${id}/`, {
+      method: "DELETE",
+    })
+    return status === 204 || status === 200
+  } catch {
+    return false
+  }
+}
+
+export async function deletePipelines(ids: number[]): Promise<boolean> {
+  const results = await Promise.all(ids.map(deletePipeline))
+  return results.every(Boolean)
+}
+
 export async function runPipeline(id: number): Promise<TaskRunDetail | null> {
   const base = getApiBase()
   try {

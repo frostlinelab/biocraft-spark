@@ -62,35 +62,172 @@
   background: rgba(211, 168, 124, 0.25);
 }
 
-/* ── Create bar ──────────────────────────────────────────── */
-
-.bc-create-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-}
-
-.bc-create-bar__fields {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.bc-create-bar__error {
-  font-size: 12px;
+.bc-btn--danger {
+  background: rgba(233, 115, 102, 0.12);
+  border-color: rgba(233, 115, 102, 0.25);
   color: #e97366;
 }
 
-.bc-create-bar__actions {
-  display: flex;
-  gap: 8px;
+.bc-btn--danger:hover {
+  background: rgba(233, 115, 102, 0.22);
 }
+
+/* ── Batch toolbar ───────────────────────────────────────── */
+
+.bc-wf-batch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: rgba(211, 168, 124, 0.06);
+  border: 1px solid rgba(211, 168, 124, 0.15);
+  border-radius: 10px;
+  animation: bc-batch-in 0.15s ease;
+}
+
+@keyframes bc-batch-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bc-wf-batch__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d3a87c;
+  flex: 1;
+}
+
+.bc-wf-batch__actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Grid card checkbox ───────────────────────────────────── */
+
+.bc-wf-card__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  accent-color: #d3a87c;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.bc-wf-card:hover .bc-wf-card__check,
+.bc-wf-card--selected .bc-wf-card__check {
+  opacity: 1;
+}
+
+/* ── Modal ────────────────────────────────────────────────── */
+
+.bc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  animation: bc-modal-fade 0.15s ease;
+}
+
+@keyframes bc-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bc-modal {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 28px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: bc-modal-in 0.18s ease;
+}
+
+@keyframes bc-modal-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.bc-modal__title {
+  font-size: 18px;
+  font-weight: 650;
+  color: #ececec;
+  margin: 0 0 4px;
+}
+
+.bc-modal__subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 0 20px;
+}
+
+.bc-modal__field {
+  margin-bottom: 16px;
+}
+
+.bc-modal__label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bc-modal__error {
+  font-size: 12px;
+  color: #e97366;
+  margin-top: 6px;
+}
+
+.bc-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bc-input--block {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bc-textarea {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: #252525;
+  color: #ececec;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.bc-textarea:focus {
+  border-color: #d3a87c;
+}
+
+.bc-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Input ────────────────────────────────────────────────── */
 
 .bc-input {
   font-family: inherit;
@@ -121,6 +258,7 @@
 }
 
 .bc-wf-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -144,6 +282,11 @@
 .bc-wf-card:focus-visible {
   outline: 2px solid #d3a87c;
   outline-offset: 2px;
+}
+
+.bc-wf-card--selected {
+  border-color: #d3a87c;
+  box-shadow: 0 0 0 2px rgba(211, 168, 124, 0.15);
 }
 
 .bc-wf-card__icon {

@@ -1,10 +1,12 @@
 // Biocraft-Spark — Workflow List page showing all pipelines
+// Supports multi-select management and modal creation
 
 import { useCallback, useEffect, useState } from "react"
 import {
   type PipelineSummary,
   fetchPipelines,
   createPipeline,
+  deletePipelines,
 } from "../lib/api"
 import "./WorkflowList.css"
 
@@ -18,9 +20,13 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
   const [pipelines, setPipelines] = useState<PipelineSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [creating, setCreating] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState("")
+  const [newDesc, setNewDesc] = useState("")
   const [createError, setCreateError] = useState("")
+  const [creating, setCreating] = useState(false)
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,6 +44,13 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
     void load()
   }, [load, refreshToken])
 
+  const openModal = () => {
+    setNewName("")
+    setNewDesc("")
+    setCreateError("")
+    setShowModal(true)
+  }
+
   const handleCreate = async () => {
     const name = newName.trim()
     if (!name) {
@@ -45,13 +58,63 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
       return
     }
     setCreateError("")
-    const result = await createPipeline({ name })
+    setCreating(true)
+    const result = await createPipeline({
+      name,
+      description: newDesc.trim() || undefined,
+    })
     if (result) {
+      setShowModal(false)
       onCreate(result.id)
     } else {
       setCreateError("Failed to create workflow")
     }
+    setCreating(false)
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      void handleCreate()
+    }
+    if (e.key === "Escape") {
+      setShowModal(false)
+    }
+  }
+
+  // ── Multi-select helpers ────────────────────────────────────
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const selectAll = () => {
+    setSelectedIds(new Set(pipelines.map((p) => p.id)))
+  }
+
+  const deselectAll = () => {
+    setSelectedIds(new Set())
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return
+    const ok = await deletePipelines([...selectedIds])
+    if (ok) {
+      setSelectedIds(new Set())
+      void load()
+    }
+  }
+
+  const batchCount = selectedIds.size
+  const allSelected = pipelines.length > 0 && batchCount === pipelines.length
 
   return (
     <div className="bc-wf-list">
@@ -64,49 +127,36 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
         </div>
         <button
           className="bc-btn bc-btn--primary"
-          onClick={() => {
-            setCreating(true)
-            setNewName("")
-            setCreateError("")
-          }}
+          onClick={openModal}
         >
           + New Workflow
         </button>
       </header>
 
-      {/* Create dialog */}
-      {creating && (
-        <div className="bc-create-bar">
-          <div className="bc-create-bar__fields">
-            <input
-              className="bc-input"
-              type="text"
-              placeholder="Workflow name"
-              value={newName}
-              onChange={(e) => {
-                setNewName(e.target.value)
-                setCreateError("")
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleCreate()
-              }}
-              autoFocus
-            />
-            {createError && (
-              <span className="bc-create-bar__error">{createError}</span>
-            )}
-          </div>
-          <div className="bc-create-bar__actions">
-            <button className="bc-btn bc-btn--primary" onClick={() => void handleCreate()}>
-              Create
+      {/* ── Batch action toolbar ─────────────────────────────── */}
+      {batchCount > 0 && (
+        <div className="bc-wf-batch">
+          <span className="bc-wf-batch__count">
+            {batchCount} {batchCount === 1 ? "workflow" : "workflows"} selected
+          </span>
+          <div className="bc-wf-batch__actions">
+            <button
+              className="bc-btn"
+              onClick={allSelected ? deselectAll : selectAll}
+            >
+              {allSelected ? "Deselect All" : "Select All"}
             </button>
-            <button className="bc-btn" onClick={() => setCreating(false)}>
-              Cancel
+            <button
+              className="bc-btn bc-btn--danger"
+              onClick={() => void handleDeleteSelected()}
+            >
+              Delete Selected
             </button>
           </div>
         </div>
       )}
 
+      {/* ── List ─────────────────────────────────────────────── */}
       {error ? (
         <div className="bc-wf-list__error">
           <p>{error}</p>
@@ -127,32 +177,115 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
         </div>
       ) : (
         <div className="bc-wf-list__grid">
-          {pipelines.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="bc-wf-card"
-              onClick={() => onSelect(p.id)}
-            >
-              <div className="bc-wf-card__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="5" r="2.5" />
-                  <circle cx="5" cy="19" r="2.5" />
-                  <circle cx="19" cy="19" r="2.5" />
-                  <line x1="12" y1="7.5" x2="5" y2="16.5" />
-                  <line x1="12" y1="7.5" x2="19" y2="16.5" />
-                  <line x1="7.5" y1="19" x2="17.5" y2="19" />
-                </svg>
-              </div>
-              <h3 className="bc-wf-card__name">{p.name}</h3>
-              {p.description && (
-                <p className="bc-wf-card__desc">{p.description}</p>
-              )}
-              <span className="bc-wf-card__time">
-                Updated {new Date(p.updated_at).toLocaleDateString()}
-              </span>
-            </button>
-          ))}
+          {pipelines.map((p) => {
+            const isSelected = selectedIds.has(p.id)
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className={`bc-wf-card${isSelected ? " bc-wf-card--selected" : ""}`}
+                onClick={() => onSelect(p.id)}
+              >
+                <input
+                  type="checkbox"
+                  className="bc-wf-card__check"
+                  checked={isSelected}
+                  onChange={() => toggleSelect(p.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  title="Select workflow"
+                />
+                <div className="bc-wf-card__icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="5" r="2.5" />
+                    <circle cx="5" cy="19" r="2.5" />
+                    <circle cx="19" cy="19" r="2.5" />
+                    <line x1="12" y1="7.5" x2="5" y2="16.5" />
+                    <line x1="12" y1="7.5" x2="19" y2="16.5" />
+                    <line x1="7.5" y1="19" x2="17.5" y2="19" />
+                  </svg>
+                </div>
+                <h3 className="bc-wf-card__name">{p.name}</h3>
+                {p.description && (
+                  <p className="bc-wf-card__desc">{p.description}</p>
+                )}
+                <span className="bc-wf-card__time">
+                  Updated {new Date(p.updated_at).toLocaleDateString()}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Create Modal ─────────────────────────────────────── */}
+      {showModal && (
+        <div
+          className="bc-modal-overlay"
+          onClick={() => setShowModal(false)}
+          onKeyDown={handleKeyDown}
+        >
+          <div className="bc-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="bc-modal__title">New Workflow</h3>
+            <p className="bc-modal__subtitle">
+              Create a new analysis pipeline to get started.
+            </p>
+
+            <div className="bc-modal__field">
+              <label className="bc-modal__label" htmlFor="wf-name">Name</label>
+              <input
+                id="wf-name"
+                className="bc-input bc-input--block"
+                type="text"
+                placeholder="e.g. RNA-seq Pipeline"
+                value={newName}
+                onChange={(e) => {
+                  setNewName(e.target.value)
+                  setCreateError("")
+                }}
+                onKeyDown={handleKeyDown}
+                autoFocus
+              />
+            </div>
+
+            <div className="bc-modal__field">
+              <label className="bc-modal__label" htmlFor="wf-desc">Description (optional)</label>
+              <textarea
+                id="wf-desc"
+                className="bc-textarea"
+                placeholder="Brief description of what this workflow does..."
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    void handleCreate()
+                  }
+                  if (e.key === "Escape") setShowModal(false)
+                }}
+                rows={3}
+              />
+            </div>
+
+            {createError && (
+              <p className="bc-modal__error">{createError}</p>
+            )}
+
+            <div className="bc-modal__actions">
+              <button
+                className="bc-btn"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bc-btn bc-btn--primary"
+                onClick={() => void handleCreate()}
+                disabled={creating}
+              >
+                {creating ? "Creating..." : "Create Workflow"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
