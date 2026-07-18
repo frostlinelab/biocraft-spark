@@ -15,7 +15,7 @@ export interface RuntimeCheckResult {
 }
 
 export interface PipelineSummary {
-  id: number
+  id: string
   name: string
   description: string
   created_at: string
@@ -28,7 +28,7 @@ export interface PipelineDetail extends PipelineSummary {
 
 export interface TaskRunSummary {
   id: number
-  pipeline_id: number
+  pipeline_id: string
   pipeline_name: string
   status: "pending" | "running" | "succeeded" | "failed"
   started_at: string | null
@@ -160,7 +160,7 @@ export async function fetchPipelines(): Promise<PipelineSummary[]> {
   }
 }
 
-export async function fetchPipeline(id: number): Promise<PipelineDetail | null> {
+export async function fetchPipeline(id: string): Promise<PipelineDetail | null> {
   const base = getApiBase()
   try {
     const { status, data } = await fetchJson(base + `/api/pipelines/${id}/`)
@@ -190,7 +190,7 @@ export async function createPipeline(body: {
 }
 
 export async function savePipeline(
-  id: number,
+  id: string,
   body: { name?: string; description?: string; yaml_content?: string },
 ): Promise<PipelineDetail | null> {
   const base = getApiBase()
@@ -206,7 +206,7 @@ export async function savePipeline(
   }
 }
 
-export async function deletePipeline(id: number): Promise<boolean> {
+export async function deletePipeline(id: string): Promise<boolean> {
   const base = getApiBase()
   try {
     const { status } = await fetchJson(base + `/api/pipelines/${id}/`, {

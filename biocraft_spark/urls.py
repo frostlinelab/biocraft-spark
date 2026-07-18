@@ -45,8 +45,8 @@ urlpatterns = [
     path("api/dashboard-stats/", dashboard_stats, name="dashboard_stats"),
     path("api/pipelines/", pipeline_list, name="pipeline_list"),
     path("api/pipelines/create/", pipeline_create, name="pipeline_create"),
-    path("api/pipelines/<int:pk>/", pipeline_detail, name="pipeline_detail"),
-    path("api/pipelines/<int:pk>/run/", pipeline_run, name="pipeline_run"),
+    path("api/pipelines/<str:pk>/", pipeline_detail, name="pipeline_detail"),
+    path("api/pipelines/<str:pk>/run/", pipeline_run, name="pipeline_run"),
     path("api/task-runs/", taskrun_list, name="taskrun_list"),
     path("api/task-runs/<int:pk>/", taskrun_detail, name="taskrun_detail"),
     # SPA fallback: serve React index.html for any unmatched path
