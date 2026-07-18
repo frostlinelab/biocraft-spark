@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   ReactFlow,
   Background,
@@ -13,8 +13,9 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./WorkflowCanvas.css"
+import { fetchPipeline, type PipelineDetail } from "../lib/api"
 
-const initialNodes: Node[] = [
+const DEFAULT_NODES: Node[] = [
   {
     id: "1",
     type: "default",
@@ -41,17 +42,67 @@ const initialNodes: Node[] = [
   },
 ]
 
-const initialEdges: Edge[] = [
+const DEFAULT_EDGES: Edge[] = [
   { id: "e1-2", source: "1", target: "2", animated: true },
   { id: "e1-3", source: "1", target: "3", animated: true },
   { id: "e2-4", source: "2", target: "4", animated: true },
   { id: "e3-4", source: "3", target: "4", animated: true },
 ]
 
-export default function WorkflowCanvas() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+interface WorkflowCanvasProps {
+  pipelineId: number
+  onBack: () => void
+  onRun?: () => void
+}
+
+export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCanvasProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [pipelineName, setPipelineName] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+
+  // Load pipeline data on mount or when pipelineId changes
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setLoadError("")
+    fetchPipeline(pipelineId).then((p: PipelineDetail | null) => {
+      if (cancelled) return
+      if (!p) {
+        setLoadError("Workflow not found")
+        setLoading(false)
+        return
+      }
+      setPipelineName(p.name)
+
+      // Try to parse yaml_content as JSON for stored graph data
+      if (p.yaml_content) {
+        try {
+          const graph = JSON.parse(p.yaml_content)
+          if (graph.nodes && Array.isArray(graph.nodes)) {
+            setNodes(graph.nodes)
+          } else {
+            setNodes(DEFAULT_NODES)
+          }
+          if (graph.edges && Array.isArray(graph.edges)) {
+            setEdges(graph.edges)
+          } else {
+            setEdges(DEFAULT_EDGES)
+          }
+        } catch {
+          setNodes(DEFAULT_NODES)
+          setEdges(DEFAULT_EDGES)
+        }
+      } else {
+        setNodes(DEFAULT_NODES)
+        setEdges(DEFAULT_EDGES)
+      }
+      setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [pipelineId, setNodes, setEdges])
 
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds: Edge[]) => addEdge(connection, eds)),
@@ -82,22 +133,73 @@ export default function WorkflowCanvas() {
   const nodeCount = nodes.length
   const edgeCount = edges.length
 
+  if (loading) {
+    return (
+      <div className="bc-canvas">
+        <div className="bc-canvas__toolbar">
+          <button type="button" className="bc-canvas__btn" onClick={onBack}>
+            ← Back
+          </button>
+          <span className="bc-canvas__stat" style={{ marginLeft: 12 }}>
+            Loading...
+          </span>
+        </div>
+        <div className="bc-canvas__flow bc-canvas__flow--loading">
+          <p className="bc-canvas__loading-text">Loading workflow...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="bc-canvas">
+        <div className="bc-canvas__toolbar">
+          <button type="button" className="bc-canvas__btn" onClick={onBack}>
+            ← Back
+          </button>
+        </div>
+        <div className="bc-canvas__flow bc-canvas__flow--loading">
+          <p className="bc-canvas__loading-text">{loadError}</p>
+          <button className="bc-btn" onClick={onBack}>Go Back</button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bc-canvas">
       <div className="bc-canvas__toolbar">
-        <div className="bc-canvas__stats">
-          <span className="bc-canvas__stat">
-            <span className="bc-canvas__stat-value">{nodeCount}</span>
-            <span className="bc-canvas__stat-label">{nodeCount === 1 ? "Node" : "Nodes"}</span>
-          </span>
-          <span className="bc-canvas__stat">
-            <span className="bc-canvas__stat-value">{edgeCount}</span>
-            <span className="bc-canvas__stat-label">{edgeCount === 1 ? "Edge" : "Edges"}</span>
-          </span>
+        <div className="bc-canvas__toolbar-left">
+          <button type="button" className="bc-canvas__btn" onClick={onBack}>
+            ← Back
+          </button>
+          <span className="bc-canvas__pipeline-name">{pipelineName}</span>
         </div>
-        <button type="button" className="bc-canvas__btn" onClick={addNode}>
-          + Add Node
-        </button>
+        <div className="bc-canvas__toolbar-right">
+          <div className="bc-canvas__stats">
+            <span className="bc-canvas__stat">
+              <span className="bc-canvas__stat-value">{nodeCount}</span>
+              <span className="bc-canvas__stat-label">{nodeCount === 1 ? "Node" : "Nodes"}</span>
+            </span>
+            <span className="bc-canvas__stat">
+              <span className="bc-canvas__stat-value">{edgeCount}</span>
+              <span className="bc-canvas__stat-label">{edgeCount === 1 ? "Edge" : "Edges"}</span>
+            </span>
+          </div>
+          <button type="button" className="bc-canvas__btn" onClick={addNode}>
+            + Add Node
+          </button>
+          {onRun && (
+            <button
+              type="button"
+              className="bc-canvas__btn bc-canvas__btn--run"
+              onClick={onRun}
+            >
+              ▶ Run
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bc-canvas__flow">

@@ -1,20 +1,58 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Sidebar, { type NavView } from "./Sidebar"
 import Dashboard from "./Dashboard"
 import WorkflowCanvas from "./WorkflowCanvas"
+import WorkflowList from "./WorkflowList"
 import TaskList from "./TaskList"
 import RuntimeHealthPanel from "./RuntimeHealthPanel"
 import "./AppLayout.css"
+import "./WorkflowList.css"
 
 export default function AppLayout() {
   const [view, setView] = useState<NavView>("dashboard")
+  // Workflow state
+  const [editingPipelineId, setEditingPipelineId] = useState<number | null>(null)
+  const [workflowRefreshToken, setWorkflowRefreshToken] = useState(0)
+
+  const handleSelectWorkflow = useCallback((pipelineId: number) => {
+    setEditingPipelineId(pipelineId)
+  }, [])
+
+  const handleCreateWorkflow = useCallback((pipelineId: number) => {
+    setWorkflowRefreshToken((t) => t + 1)
+    setEditingPipelineId(pipelineId)
+  }, [])
+
+  const handleBackToList = useCallback(() => {
+    setEditingPipelineId(null)
+    setWorkflowRefreshToken((t) => t + 1)
+  }, [])
+
+  const handleRunWorkflow = useCallback(() => {
+    // Will be wired up in the next feature
+    setView("tasks")
+  }, [setView])
 
   return (
     <div className="bc-layout">
       <Sidebar active={view} onChange={setView} />
       <main className="bc-layout__main">
         {view === "dashboard" && <Dashboard />}
-        {view === "workflows" && <WorkflowCanvas />}
+        {view === "workflows" && (
+          editingPipelineId != null ? (
+            <WorkflowCanvas
+              pipelineId={editingPipelineId}
+              onBack={handleBackToList}
+              onRun={handleRunWorkflow}
+            />
+          ) : (
+            <WorkflowList
+              onSelect={handleSelectWorkflow}
+              onCreate={handleCreateWorkflow}
+              refreshToken={workflowRefreshToken}
+            />
+          )
+        )}
         {view === "tasks" && <TaskList />}
         {view === "health" && (
           <div className="bc-layout__health">
