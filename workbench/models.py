@@ -1,7 +1,19 @@
+import secrets
 from django.db import models
 
 
+def generate_workflow_id() -> str:
+    """Return an 8-character uppercase hex workflow ID like '3A073580'."""
+    return secrets.token_hex(4).upper()
+
+
 class Pipeline(models.Model):
+    id = models.CharField(
+        max_length=8,
+        primary_key=True,
+        default=generate_workflow_id,
+        editable=False,
+    )
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     yaml_content = models.TextField(blank=True, default="")
@@ -12,7 +24,7 @@ class Pipeline(models.Model):
         ordering = ["-updated_at"]
 
     def __str__(self):
-        return self.name
+        return f"{self.id} — {self.name}"
 
 
 class TaskRun(models.Model):
