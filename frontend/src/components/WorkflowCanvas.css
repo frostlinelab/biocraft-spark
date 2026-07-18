@@ -110,7 +110,7 @@
 /* ── Right-side block palette ─────────────────────────────── */
 
 .bc-palette {
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
   background: #1a1a1a;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
@@ -130,10 +130,89 @@
 }
 
 .bc-palette__list {
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Palette group (accordion) ──────────────────────────────── */
+
+.bc-palette__group {
+  display: flex;
+  flex-direction: column;
+}
+
+.bc-palette__group-header {
+  display: flex;
+  align-items: center;
   gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  text-align: left;
+}
+
+.bc-palette__group-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bc-palette__group-header--open {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bc-palette__group-chevron {
+  font-size: 10px;
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.bc-palette__group-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(211, 168, 124, 0.1);
+  color: #d3a87c;
+  flex-shrink: 0;
+}
+
+.bc-palette__group-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bc-palette__group-count {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.bc-palette__group-blocks {
+  padding: 2px 0 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .bc-palette__block {
@@ -261,13 +340,15 @@
   position: absolute;
   right: 16px;
   top: 56px;
-  width: 240px;
+  width: 260px;
   background: #1e1e1e;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 16px;
   color: #ececec;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-height: calc(100% - 72px);
+  overflow-y: auto;
 }
 
 .bc-canvas__panel-title {
@@ -277,6 +358,47 @@
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.bc-canvas__panel-subtitle {
+  font-size: 11px;
+  font-weight: 650;
+  margin: 12px 0 6px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bc-canvas__panel-ports {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.bc-canvas__panel-ports li {
+  padding: 3px 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bc-canvas__port-type {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 4px;
+  background: rgba(114, 188, 143, 0.15);
+  color: #72bc8f;
+}
+
+.bc-canvas__port-pattern {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: Menlo, Consolas, "SF Mono", monospace;
+  margin-top: 1px;
 }
 
 .bc-canvas__panel-dl {

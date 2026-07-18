@@ -2,6 +2,9 @@
 
 欢迎贡献插件！本指南覆盖插件开发的全流程：从写 YAML 到容器镜像规范。
 
+> **📖 完整的插件开发文档请参阅 [docs/plugin-authoring.md](docs/plugin-authoring.md)。**
+> 内置积木的参考文档请参阅 [docs/built-in-blocks.md](docs/built-in-blocks.md)。
+
 ---
 
 ## 目录

@@ -161,7 +161,7 @@ biocraft-spark/
 
 ## Plugin Format
 
-Plugins are YAML files validated against `biocraft_core/plugin/plugin_schema.json`. Each plugin defines one or more containerized steps with typed inputs/outputs, letting Biocraft automatically route files between tools.
+Plugins are YAML files that define one or more **blocks** (draggable workflow nodes). Each block declares its container runtime, typed input/output ports, and configurable parameters. Biocraft automatically discovers plugins in the `plugins/` directory and surfaces them as categorized blocks in the workflow editor.
 
 ```yaml
 name: fastqc
@@ -181,7 +181,7 @@ steps:
         type: file
 ```
 
-> See [CONTRIBUTING.md](CONTRIBUTING.md) for the full plugin development guide, including input/output routing, standard paths, and a complete Prokka → Roary example.
+> See [CONTRIBUTING.md](CONTRIBUTING.md) for the plugin development guide and [docs/plugin-authoring.md](docs/plugin-authoring.md) for the complete plugin authoring reference.
 
 ---
 
@@ -232,6 +232,8 @@ REST API for the workflow frontend:
 | Document | Description |
 |---|---|
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Plugin development guide — YAML format, IO routing, container specs |
+| [docs/plugin-authoring.md](docs/plugin-authoring.md) | Complete plugin authoring reference — block definition, port types, params, examples |
+| [docs/built-in-blocks.md](docs/built-in-blocks.md) | Built-in block reference — Start, End, Input, Output |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common issues — Docker, timeouts, schema validation, scheduler |
 
 ## Contributing

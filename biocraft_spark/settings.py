@@ -122,3 +122,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'dist']
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# ── Biocraft plugin directory ──────────────────────────────────────────────
+
+BIOCRAFT_PLUGINS_DIR = BASE_DIR / "plugins"

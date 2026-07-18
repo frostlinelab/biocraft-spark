@@ -1,11 +1,34 @@
+from .builtins import builtin_blocks
+from .discovery import discover_plugins
 from .loader import load_plugin
-from .schema import InputSpec, OutputSpec, PluginSpec, StepRetry, StepSpec
+from .resolver import get_all_block_specs, resolve_graph_to_task_nodes
+from .schema import (
+    BlockParam,
+    BlockPort,
+    BlockRuntime,
+    BlockSpec,
+    InputSpec,
+    OutputSpec,
+    PluginBlocksSpec,
+    PluginSpec,
+    StepRetry,
+    StepSpec,
+)
 
 __all__ = [
     "load_plugin",
+    "discover_plugins",
+    "builtin_blocks",
+    "get_all_block_specs",
+    "resolve_graph_to_task_nodes",
     "InputSpec",
     "OutputSpec",
     "PluginSpec",
     "StepRetry",
     "StepSpec",
+    "BlockPort",
+    "BlockParam",
+    "BlockRuntime",
+    "BlockSpec",
+    "PluginBlocksSpec",
 ]

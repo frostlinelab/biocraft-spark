@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, re_path
 from workbench.views import docker_ping, executor_ping, home, plugin_ping, scheduler_ping
 from workbench.api import (
+    block_list,
     dashboard_stats,
     pipeline_create,
     pipeline_detail,
@@ -40,6 +41,7 @@ urlpatterns = [
     path("debug/ping-plugin/", plugin_ping, name="plugin_ping"),
     path("debug/ping-plugin", plugin_ping),
     # REST API
+    path("api/blocks/", block_list, name="block_list"),
     path("api/dashboard-stats/", dashboard_stats, name="dashboard_stats"),
     path("api/pipelines/", pipeline_list, name="pipeline_list"),
     path("api/pipelines/create/", pipeline_create, name="pipeline_create"),

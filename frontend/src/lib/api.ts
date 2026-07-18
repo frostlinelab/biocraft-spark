@@ -53,6 +53,47 @@ export interface DashboardStats {
   }
 }
 
+// ── Block / Plugin types ─────────────────────────────────────────────────────
+
+export interface BlockPort {
+  name: string
+  label: string
+  portType: "file" | "directory" | "string" | "number" | "signal"
+  pattern: string
+  multiple: boolean
+}
+
+export interface BlockParam {
+  name: string
+  label: string
+  paramType: "string" | "integer" | "float" | "boolean" | "select"
+  default: string | number | boolean | null
+  min: number | null
+  max: number | null
+  options: string[]
+}
+
+export interface BlockDef {
+  name: string
+  label: string
+  description: string
+  icon: string
+  pluginName: string
+  pluginVersion: string
+  hasRuntime: boolean
+  inputs: BlockPort[]
+  outputs: BlockPort[]
+  params: BlockParam[]
+}
+
+export interface BlockCategory {
+  name: string
+  label: string
+  description: string
+  icon: string
+  blocks: BlockDef[]
+}
+
 const DEFAULT_BASE = ""
 const REQUEST_TIMEOUT_MS = 8000
 
@@ -306,3 +347,16 @@ export async function runAllChecks(): Promise<RuntimeCheckResult[]> {
 }
 
 export const RUNTIME_ENDPOINTS = ENDPOINTS
+
+// ── Blocks ────────────────────────────────────────────────────────────────────
+
+export async function fetchBlocks(): Promise<BlockCategory[]> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + "/api/blocks/")
+    if (status !== 200) return []
+    return (data as { categories: BlockCategory[] }).categories ?? []
+  } catch {
+    return []
+  }
+}

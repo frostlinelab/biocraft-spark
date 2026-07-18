@@ -1,0 +1,45 @@
+name: fastqc
+version: "1.0.0"
+description: Quality control for sequencing reads
+icon: microscope
+
+blocks:
+  - name: run-fastqc
+    label: FastQC
+    description: Run FastQC quality control on sequencing reads
+    icon: beaker
+
+    runtime:
+      image: biocontainers/fastqc:v0.11.9
+      command:
+        - "fastqc"
+        - "-o"
+        - "/data/output"
+        - "-t"
+        - "${params.threads}"
+        - "/data/input/*.fastq"
+
+    inputs:
+      - name: reads
+        label: Sequencing Reads
+        type: file
+        pattern: "*.fastq"
+        multiple: true
+
+    outputs:
+      - name: report
+        label: QC Report
+        type: file
+        pattern: "*.html"
+      - name: data
+        label: QC Data
+        type: file
+        pattern: "*.zip"
+
+    params:
+      - name: threads
+        label: Threads
+        type: integer
+        default: 4
+        min: 1
+        max: 32
