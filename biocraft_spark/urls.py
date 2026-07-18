@@ -24,6 +24,7 @@ from workbench.api import (
     pipeline_detail,
     pipeline_list,
     pipeline_run,
+    runtime_config,
     taskrun_detail,
     taskrun_list,
 )
@@ -41,6 +42,7 @@ urlpatterns = [
     path("debug/ping-plugin/", plugin_ping, name="plugin_ping"),
     path("debug/ping-plugin", plugin_ping),
     # REST API
+    path("api/runtime-config/", runtime_config, name="runtime_config"),
     path("api/blocks/", block_list, name="block_list"),
     path("api/dashboard-stats/", dashboard_stats, name="dashboard_stats"),
     path("api/pipelines/", pipeline_list, name="pipeline_list"),

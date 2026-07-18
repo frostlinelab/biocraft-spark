@@ -126,3 +126,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # ── Biocraft plugin directory ──────────────────────────────────────────────
 
 BIOCRAFT_PLUGINS_DIR = BASE_DIR / "plugins"
+
+# ── Runtime config ─────────────────────────────────────────────────────────
+
+BIOCRAFT_RUNTIME = {
+    "cpu_cores": 8,
+    "cpu_threads": 16,
+    "memory_gb": 32,
+    "max_parallel_containers": 8,
+}

@@ -197,6 +197,50 @@ runtime:
 
 ---
 
+## 资源配置
+
+插件积木可以声明每个实例所需的 CPU 和内存资源。Biocraft 使用这些信息来计算并行度（fan-out）。
+
+```yaml
+runtime:
+  image: biocontainers/prokka:1.14.6
+  command: ["prokka", "--cpus", "${params.threads}", ...]
+  resources:
+    min_threads: 2        # 每个实例最少需要的线程数
+    min_memory_gb: 4      # 每个实例最少需要的内存 (GB)
+```
+
+### Fan-out 自动并行
+
+当 Input 积木提供了 N 个文件，且下游插件声明了 `resources.min_threads`，Biocraft 自动计算并行度：
+
+```
+并行实例数 = min(文件数, 全局线程数 / 插件最低线程数)
+```
+
+**示例：** 8 核 16 线程的机器，Prokka 声明 `min_threads: 2`：
+- 5 个 fasta 文件 → 5 × 2 = 10 线程 < 16 → **5 个全部并行**
+- 50 个 fasta 文件 → min(50, 16/2) = **8 个并行**，分 7 波执行
+
+在编辑器中，插件节点会自动展开显示 fan-out lanes（鱼骨结构），每条 lane 对应一个输入文件。Lanes 由 Biocraft 锁定对齐，用户无需手动排列。
+
+### 全局资源池
+
+在 Django `settings.py` 中配置：
+
+```python
+BIOCRAFT_RUNTIME = {
+    "cpu_cores": 8,
+    "cpu_threads": 16,
+    "memory_gb": 32,
+    "max_parallel_containers": 8,
+}
+```
+
+前端可通过 `GET /api/runtime-config/` 获取资源信息，用于编辑器中的资源徽标显示。
+
+---
+
 ## 容器路径约定
 
 **所有积木的容器命令必须遵守以下路径约定：**

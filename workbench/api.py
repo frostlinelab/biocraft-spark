@@ -11,6 +11,23 @@ from .models import Pipeline, TaskRun
 from biocraft_core.plugin import builtin_blocks, discover_plugins, BlockParam, BlockPort, BlockSpec, PluginBlocksSpec
 
 
+# ── Runtime config API ──────────────────────────────────────────────────────
+
+def runtime_config(request):
+    """GET /api/runtime-config/ — return global runtime resource settings"""
+    from django.conf import settings
+    from biocraft_core.runtime.resources import RuntimeConfig
+
+    cfg_raw = getattr(settings, "BIOCRAFT_RUNTIME", {})
+    cfg = RuntimeConfig(**cfg_raw) if cfg_raw else RuntimeConfig()
+    return JsonResponse({
+        "cpuCores": cfg.cpu_cores,
+        "cpuThreads": cfg.cpu_threads,
+        "memoryGb": cfg.memory_gb,
+        "maxParallelContainers": cfg.max_parallel_containers,
+    })
+
+
 # ── Block / Plugin API ────────────────────────────────────────────────────────
 
 def _serialize_param(p: BlockParam) -> dict:

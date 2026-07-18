@@ -11,14 +11,14 @@ import "./WorkflowList.css"
 export default function AppLayout() {
   const [view, setView] = useState<NavView>("dashboard")
   // Workflow state
-  const [editingPipelineId, setEditingPipelineId] = useState<number | null>(null)
+  const [editingPipelineId, setEditingPipelineId] = useState<string | null>(null)
   const [workflowRefreshToken, setWorkflowRefreshToken] = useState(0)
 
-  const handleSelectWorkflow = useCallback((pipelineId: number) => {
+  const handleSelectWorkflow = useCallback((pipelineId: string) => {
     setEditingPipelineId(pipelineId)
   }, [])
 
-  const handleCreateWorkflow = useCallback((pipelineId: number) => {
+  const handleCreateWorkflow = useCallback((pipelineId: string) => {
     setWorkflowRefreshToken((t) => t + 1)
     setEditingPipelineId(pipelineId)
   }, [])

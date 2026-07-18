@@ -22,6 +22,7 @@ import {
   type BlockDef,
   type BlockCategory,
 } from "../lib/api"
+import { nodeTypes } from "./nodes/nodeTypes"
 
 // ── Default initial graph ─────────────────────────────────────
 
@@ -51,7 +52,7 @@ const AUTO_SAVE_MS = 2000
 type SaveState = "idle" | "saving" | "saved" | "error"
 
 interface WorkflowCanvasProps {
-  pipelineId: number
+  pipelineId: string
   onBack: () => void
   onRun?: () => void
 }
@@ -219,9 +220,16 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
       }
 
       nodeIdCounter.current += 1
+      // Determine node type based on block
+      const nodeType = blockDef.pluginName === "builtin" && blockDef.name === "input"
+        ? "biocraftInput"
+        : blockDef.hasRuntime
+          ? "biocraftPlugin"
+          : "default"
+
       const newNode: Node = {
         id: String(nodeIdCounter.current),
-        type: "default",
+        type: nodeType,
         data: {
           label: blockDef.label,
           blockPlugin: blockDef.pluginName,
@@ -363,6 +371,7 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
+            nodeTypes={nodeTypes}
             fitView
             attributionPosition="bottom-right"
           >

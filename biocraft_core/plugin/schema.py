@@ -70,11 +70,19 @@ class BlockParam:
 
 
 @dataclass
+class BlockResources:
+    """Per-instance resource requirements for a plugin block."""
+    min_threads: int = 1
+    min_memory_gb: float = 1.0
+
+
+@dataclass
 class BlockRuntime:
     """Container execution spec for a block."""
     image: str
     command: list[str]
     env: dict[str, str] = field(default_factory=dict)
+    resources: BlockResources = field(default_factory=BlockResources)
 
 
 @dataclass

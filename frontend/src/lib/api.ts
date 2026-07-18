@@ -218,12 +218,12 @@ export async function deletePipeline(id: string): Promise<boolean> {
   }
 }
 
-export async function deletePipelines(ids: number[]): Promise<boolean> {
+export async function deletePipelines(ids: string[]): Promise<boolean> {
   const results = await Promise.all(ids.map(deletePipeline))
   return results.every(Boolean)
 }
 
-export async function runPipeline(id: number): Promise<TaskRunDetail | null> {
+export async function runPipeline(id: string): Promise<TaskRunDetail | null> {
   const base = getApiBase()
   try {
     const { status, data } = await fetchJson(base + `/api/pipelines/${id}/run/`, {
@@ -238,7 +238,7 @@ export async function runPipeline(id: number): Promise<TaskRunDetail | null> {
 
 // ── Task Runs ────────────────────────────────────────────────────────────────
 
-export async function fetchTaskRuns(pipelineId?: number): Promise<TaskRunSummary[]> {
+export async function fetchTaskRuns(pipelineId?: string): Promise<TaskRunSummary[]> {
   const base = getApiBase()
   const qs = pipelineId != null ? `?pipeline_id=${pipelineId}` : ""
   try {

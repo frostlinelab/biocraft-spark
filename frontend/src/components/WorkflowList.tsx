@@ -11,8 +11,8 @@ import {
 import "./WorkflowList.css"
 
 export interface WorkflowListProps {
-  onSelect: (pipelineId: number) => void
-  onCreate: (pipelineId: number) => void
+  onSelect: (pipelineId: string) => void
+  onCreate: (pipelineId: string) => void
   refreshToken?: number
 }
 
@@ -26,7 +26,7 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
   const [createError, setCreateError] = useState("")
   const [creating, setCreating] = useState(false)
   // Multi-select state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -84,7 +84,7 @@ export default function WorkflowList({ onSelect, onCreate, refreshToken }: Workf
 
   // ── Multi-select helpers ────────────────────────────────────
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {

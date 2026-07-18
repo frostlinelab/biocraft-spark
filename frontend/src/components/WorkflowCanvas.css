@@ -484,3 +484,208 @@
 .bc-canvas .react-flow__controls-button:hover {
   background: #2a2a2a;
 }
+
+/* ── Custom Biocraft nodes ────────────────────────────────── */
+
+.bc-node {
+  min-width: 140px;
+}
+
+.bc-node--input {
+  min-width: 220px;
+  padding: 20px !important;
+}
+
+.bc-node--plugin {
+  min-width: 160px;
+}
+
+.bc-node--fanout {
+  min-width: 200px;
+}
+
+.bc-node__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bc-node__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.bc-node__icon--process { background: rgba(114,188,143,0.15); color: #72bc8f; }
+.bc-node__icon--beaker { background: rgba(114,188,143,0.15); color: #72bc8f; }
+.bc-node__icon--microscope { background: rgba(94,159,232,0.15); color: #5e9fe8; }
+.bc-node__icon--filter { background: rgba(222,146,85,0.15); color: #de9255; }
+.bc-node__icon--dna { background: rgba(174,129,209,0.15); color: #ae81d1; }
+.bc-node__icon--input { background: rgba(94,159,232,0.12); color: #5e9fe8; }
+
+.bc-node__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bc-node__badge {
+  font-size: 10px;
+  font-weight: 650;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(94,159,232,0.2);
+  color: #5e9fe8;
+  margin-left: auto;
+}
+
+.bc-node__resource {
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(211,168,124,0.15);
+  color: #d3a87c;
+  margin-left: auto;
+}
+
+/* ── Input body / dropzone ────────────────────────────────── */
+
+.bc-node__body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bc-node__dropzone {
+  padding: 16px 10px;
+  border: 1.5px dashed rgba(255,255,255,0.15);
+  border-radius: 6px;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.bc-node__dropzone:hover {
+  border-color: rgba(94,159,232,0.4);
+  background: rgba(94,159,232,0.05);
+}
+
+.bc-node__dropzone-text {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.4;
+}
+
+.bc-node__dropzone-hint {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+.bc-node__filelist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.bc-node__fileitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.bc-node__fileitem:last-child {
+  border-bottom: none;
+}
+
+.bc-node__filename {
+  color: rgba(255,255,255,0.75);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bc-node__filesize {
+  color: rgba(255,255,255,0.3);
+  font-family: Menlo,Consolas,monospace;
+  font-size: 10px;
+}
+
+/* ── Fan-out lanes ────────────────────────────────────────── */
+
+.bc-node__lanes {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bc-node__lanes-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.bc-node__lanes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.bc-node__lane {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.bc-node__lane-idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(114,188,143,0.2);
+  color: #72bc8f;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.bc-node__lane-name {
+  color: rgba(255,255,255,0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Handles ──────────────────────────────────────────────── */
+
+.bc-handle {
+  width: 8px !important;
+  height: 8px !important;
+  border: 2px solid #252525 !important;
+}
+
+.bc-handle--file { background: #5e9fe8 !important; }
+.bc-handle--directory { background: #ae81d1 !important; }
+.bc-handle--string { background: #72bc8f !important; }
+.bc-handle--number { background: #de9255 !important; }
+.bc-handle--signal { background: rgba(255,255,255,0.35) !important; }

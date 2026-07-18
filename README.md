@@ -232,8 +232,9 @@ REST API for the workflow frontend:
 | Document | Description |
 |---|---|
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Plugin development guide — YAML format, IO routing, container specs |
-| [docs/plugin-authoring.md](docs/plugin-authoring.md) | Complete plugin authoring reference — block definition, port types, params, examples |
-| [docs/built-in-blocks.md](docs/built-in-blocks.md) | Built-in block reference — Start, End, Input, Output |
+| [docs/plugin-authoring.md](docs/plugin-authoring.md) | Complete plugin authoring reference — block definition, port types, params, resources, examples |
+| [docs/built-in-blocks.md](docs/built-in-blocks.md) | Built-in block reference — Start, End, Input |
+| [docs/runtime-config.md](docs/runtime-config.md) | CPU/memory resource pool configuration |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common issues — Docker, timeouts, schema validation, scheduler |
 
 ## Contributing
