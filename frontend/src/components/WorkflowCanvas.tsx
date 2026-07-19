@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react"
+import { Fragment, useCallback, useEffect, useRef, useState, type DragEvent } from "react"
 import {
   ReactFlow,
   Background,
@@ -15,12 +15,14 @@ import "@xyflow/react/dist/style.css"
 import "./WorkflowCanvas.css"
 import {
   fetchPipeline,
+  fetchTaskRun,
   savePipeline,
   runPipeline,
   fetchBlocks,
   type PipelineDetail,
   type BlockDef,
   type BlockCategory,
+  type BlockParam,
 } from "../lib/api"
 import { nodeTypes } from "./nodes/nodeTypes"
 
@@ -29,21 +31,13 @@ import { nodeTypes } from "./nodes/nodeTypes"
 const DEFAULT_NODES: Node[] = [
   {
     id: "1",
-    type: "default",
-    data: { label: "Start", blockPlugin: "builtin", blockName: "start" },
+    type: "biocraftInput",
+    data: { label: "Input", blockPlugin: "builtin", blockName: "input" },
     position: { x: 250, y: 50 },
-  },
-  {
-    id: "2",
-    type: "default",
-    data: { label: "End", blockPlugin: "builtin", blockName: "end" },
-    position: { x: 250, y: 250 },
   },
 ]
 
-const DEFAULT_EDGES: Edge[] = [
-  { id: "e1-2", source: "1", target: "2", animated: true },
-]
+const DEFAULT_EDGES: Edge[] = []
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -66,6 +60,7 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   const [loadError, setLoadError] = useState("")
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const [runState, setRunState] = useState<"idle" | "running" | "done" | "error">("idle")
+  const [runId, setRunId] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [categories, setCategories] = useState<BlockCategory[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["builtin"]))
@@ -82,6 +77,30 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   useEffect(() => {
     nodeIdCounter.current = 0
   }, [pipelineId])
+
+  // ── File update callback for InputNode ──────────────────────
+  const onUpdateFiles = useCallback(
+    (nodeId: string, files: unknown[]) => {
+      setNodes((nds: Node[]) =>
+        nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, files } } : n,
+        ),
+      )
+    },
+    [setNodes],
+  )
+
+  // ── Param update callback for PluginNode ─────────────────────
+  const onUpdateParams = useCallback(
+    (nodeId: string, paramValues: Record<string, string | number | boolean>) => {
+      setNodes((nds: Node[]) =>
+        nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, paramValues } } : n,
+        ),
+      )
+    },
+    [setNodes],
+  )
 
   // Load pipeline data on mount or when pipelineId changes
   useEffect(() => {
@@ -102,16 +121,24 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
         try {
           const graph = JSON.parse(p.yaml_content)
           if (graph.nodes && Array.isArray(graph.nodes)) {
-            setNodes(graph.nodes)
+            // Inject onUpdateFiles into Input nodes after load
+            const injectedNodes = graph.nodes.map((n: Node) =>
+              n.type === "biocraftInput"
+                ? { ...n, data: { ...n.data, onUpdateFiles } }
+                : n.type === "biocraftPlugin"
+                  ? { ...n, data: { ...n.data, onUpdateParams } }
+                  : n,
+            )
+            setNodes(injectedNodes)
             // Track max id
-            const maxId = graph.nodes.reduce((max: number, n: Node) => {
+            const maxId = injectedNodes.reduce((max: number, n: Node) => {
               const num = parseInt(n.id, 10)
               return Number.isNaN(num) ? max : Math.max(max, num)
             }, 0)
             nodeIdCounter.current = maxId
           } else {
             setNodes(DEFAULT_NODES)
-            nodeIdCounter.current = 2
+            nodeIdCounter.current = 1
           }
           if (graph.edges && Array.isArray(graph.edges)) {
             setEdges(graph.edges)
@@ -121,17 +148,17 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
         } catch {
           setNodes(DEFAULT_NODES)
           setEdges(DEFAULT_EDGES)
-          nodeIdCounter.current = 2
+          nodeIdCounter.current = 1
         }
       } else {
         setNodes(DEFAULT_NODES)
         setEdges(DEFAULT_EDGES)
-        nodeIdCounter.current = 2
+        nodeIdCounter.current = 1
       }
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [pipelineId, setNodes, setEdges])
+  }, [pipelineId, setNodes, setEdges, onUpdateFiles])
 
   // Debounced auto-save whenever nodes or edges change
   const doSave = useCallback(async () => {
@@ -163,8 +190,57 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   }, [nodes, edges, loading, doSave])
 
   const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds: Edge[]) => addEdge(connection, eds)),
-    [setEdges],
+    (connection: Connection) => {
+      // ── Validation ────────────────────────────────────────
+      const { source, target, sourceHandle, targetHandle } =
+        connection
+
+      // Reject self-connections
+      if (source === target) return
+
+      // Find source and target nodes
+      const sourceNode = nodes.find((n: Node) => n.id === source)
+      const targetNode = nodes.find((n: Node) => n.id === target)
+      if (!sourceNode || !targetNode) return
+
+      // Gather port type info from node data
+      const sourcePorts = (sourceNode.data.outputs as BlockDef["outputs"]) ?? []
+      const targetPorts = (targetNode.data.inputs as BlockDef["inputs"]) ?? []
+
+      const srcPort = sourcePorts.find((p: BlockDef["outputs"][number]) => p.name === (sourceHandle ?? "files"))
+      const tgtPort = targetPorts.find((p: BlockDef["inputs"][number]) => p.name === targetHandle)
+
+      // If handles reference known ports, validate type compatibility
+      const srcType = srcPort?.portType ?? "signal"
+      const tgtType = tgtPort?.portType ?? "signal"
+
+      // Allow same-type connections (file→file, signal→signal, etc.)
+      // Also allow signal→anything and anything→signal as loose coupling
+      if (srcType !== "signal" && tgtType !== "signal" && srcType !== tgtType) {
+        return // incompatible — silently reject
+      }
+
+      // Enforce 'multiple: false' on target ports
+      if (tgtPort && !tgtPort.multiple) {
+        const existingEdge = edges.find(
+          (e: Edge) => e.target === target && e.targetHandle === targetHandle,
+        )
+        if (existingEdge) return // port already occupied
+      }
+
+      // Prevent duplicate edges
+      const duplicate = edges.find(
+        (e: Edge) =>
+          e.source === source &&
+          e.target === target &&
+          (e.sourceHandle ?? null) === (sourceHandle ?? null) &&
+          (e.targetHandle ?? null) === (targetHandle ?? null),
+      )
+      if (duplicate) return
+
+      setEdges((eds: Edge[]) => addEdge(connection, eds))
+    },
+    [nodes, edges, setEdges],
   )
 
   const onNodeClick = useCallback(
@@ -173,8 +249,6 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
   )
 
   const onPaneClick = useCallback(() => setSelectedNode(null), [])
-
-  // ── Lookup helpers ──────────────────────────────────────────
 
   // Build a flat lookup map: "pluginName::blockName" → BlockDef
   const blockMap = useRef<Map<string, BlockDef>>(new Map())
@@ -221,11 +295,24 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
 
       nodeIdCounter.current += 1
       // Determine node type based on block
-      const nodeType = blockDef.pluginName === "builtin" && blockDef.name === "input"
-        ? "biocraftInput"
-        : blockDef.hasRuntime
-          ? "biocraftPlugin"
-          : "default"
+  let nodeType: string
+      let extraData: Record<string, unknown> = {}
+
+      if (blockDef.pluginName === "builtin" && blockDef.name === "input") {
+        nodeType = "biocraftInput"
+        extraData = { files: [], onUpdateFiles }
+      } else if (blockDef.hasRuntime) {
+        nodeType = "biocraftPlugin"
+        const pv: Record<string, string | number | boolean> = {}
+        for (const p of blockDef.params) {
+          pv[p.name] = p.default ?? (p.paramType === "boolean" ? false : "")
+        }
+        extraData = { paramValues: pv, onUpdateParams }
+      } else {
+        // Any non-runtime non-input block we don't handle visually — skip silently.
+        // This covers deleted builtins like start/end.
+        return
+      }
 
       const newNode: Node = {
         id: String(nodeIdCounter.current),
@@ -239,6 +326,7 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
           outputs: blockDef.outputs,
           params: blockDef.params,
           hasRuntime: blockDef.hasRuntime,
+          ...extraData,
         },
         position,
       }
@@ -251,13 +339,45 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
     setRunState("running")
     const result = await runPipeline(pipelineId)
     if (result) {
-      setRunState("done")
+      setRunId(result.id)
+      if (result.status === "succeeded") {
+        setRunState("done")
+      } else if (result.status === "failed") {
+        setRunState("error")
+      }
+      // else "running" or "pending" — polling effect picks it up
     } else {
       setRunState("error")
     }
     // Call the external onRun callback if provided
     if (onRun) onRun()
   }, [pipelineId, onRun])
+
+  // ── Polling effect — poll task-run status while running ─────
+  useEffect(() => {
+    if (runState !== "running" || runId === null) return
+    let cancelled = false
+    const poll = async () => {
+      if (cancelled) return
+      const tr = await fetchTaskRun(runId)
+      if (cancelled || !tr) {
+        if (!cancelled) setTimeout(poll, 2000)
+        return
+      }
+      if (tr.status === "succeeded") {
+        setRunState("done")
+      } else if (tr.status === "failed") {
+        setRunState("error")
+      } else {
+        setTimeout(poll, 2000)
+      }
+    }
+    const timer = setTimeout(poll, 2000)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [runState, runId])
 
   // ── Palette accordion toggle ────────────────────────────────
 
@@ -405,8 +525,29 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
                   x={Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
                 </dd>
               </dl>
+              {/* Params (read-only summary — edit inline on the node) */}
+              {Array.isArray(selectedNode.data.params) &&
+               (selectedNode.data.params as BlockParam[]).length > 0 ? (
+                <>
+                  <h4 className="bc-canvas__panel-subtitle">Parameters</h4>
+                  <dl className="bc-canvas__panel-dl">
+                    {(selectedNode.data.params as BlockParam[]).map((p) => {
+                      const pv = (selectedNode.data.paramValues as Record<string, unknown> | undefined) ?? {}
+                      const val = pv[p.name] !== undefined ? pv[p.name] : p.default
+                      return (
+                        <Fragment key={p.name}>
+                          <dt>{p.label}</dt>
+                          <dd className="bc-canvas__mono">
+                            {p.paramType === "boolean" ? (val ? "on" : "off") : String(val ?? "—")}
+                          </dd>
+                        </Fragment>
+                      )
+                    })}
+                  </dl>
+                </>
+              ) : null}
               {/* Show ports if available */}
-              {selectedNode.data.inputs && (selectedNode.data.inputs as BlockDef["inputs"]).length > 0 && (
+              {Array.isArray(selectedNode.data.inputs) && (selectedNode.data.inputs as BlockDef["inputs"]).length > 0 ? (
                 <>
                   <h4 className="bc-canvas__panel-subtitle">Input Ports</h4>
                   <ul className="bc-canvas__panel-ports">
@@ -418,8 +559,8 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
                     ))}
                   </ul>
                 </>
-              )}
-              {selectedNode.data.outputs && (selectedNode.data.outputs as BlockDef["outputs"]).length > 0 && (
+              ) : null}
+              {Array.isArray(selectedNode.data.outputs) && (selectedNode.data.outputs as BlockDef["outputs"]).length > 0 ? (
                 <>
                   <h4 className="bc-canvas__panel-subtitle">Output Ports</h4>
                   <ul className="bc-canvas__panel-ports">
@@ -431,7 +572,7 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
                     ))}
                   </ul>
                 </>
-              )}
+              ) : null}
             </div>
           )}
         </div>
@@ -501,19 +642,6 @@ type IconKey = string
 function BlockIcon({ icon }: { icon: IconKey }) {
   const size = 14
   switch (icon) {
-    case "start":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="9" />
-        </svg>
-      )
-    case "end":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="9" />
-          <line x1="12" y1="5" x2="12" y2="19" />
-        </svg>
-      )
     case "process":
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

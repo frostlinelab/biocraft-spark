@@ -497,11 +497,12 @@
 }
 
 .bc-node--plugin {
-  min-width: 160px;
+  min-width: 200px;
+  max-width: 320px;
 }
 
 .bc-node--fanout {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .bc-node__header {
@@ -554,17 +555,32 @@
 
 /* ── Input body / dropzone ────────────────────────────────── */
 
+.bc-node__file-input-hidden {
+  display: none;
+}
+
 .bc-node__body {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
+.bc-node__body--dragover .bc-node__dropzone,
+.bc-node__body--dragover {
+  border-color: rgba(94,159,232,0.6) !important;
+  background: rgba(94,159,232,0.08);
+}
+
 .bc-node__dropzone {
+  display: block;
+  width: 100%;
   padding: 16px 10px;
   border: 1.5px dashed rgba(255,255,255,0.15);
   border-radius: 6px;
   text-align: center;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -583,6 +599,79 @@
 .bc-node__dropzone-hint {
   font-size: 10px;
   color: rgba(255,255,255,0.3);
+}
+
+.bc-node__uploading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+
+.bc-node__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: #5e9fe8;
+  border-radius: 50%;
+  animation: bc-spin 0.6s linear infinite;
+}
+
+@keyframes bc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.bc-node__add-more {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px;
+  background: none;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: rgba(255,255,255,0.35);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.bc-node__add-more:hover {
+  border-color: rgba(94,159,232,0.3);
+  color: rgba(255,255,255,0.55);
+}
+
+.bc-node__file-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: rgba(255,255,255,0.2);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.bc-node__file-remove:hover {
+  color: #e97366;
+  background: rgba(233,115,102,0.12);
+}
+
+.bc-node__upload-error {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #e97366;
 }
 
 .bc-node__filelist {
@@ -689,3 +778,202 @@
 .bc-handle--string { background: #72bc8f !important; }
 .bc-handle--number { background: #de9255 !important; }
 .bc-handle--signal { background: rgba(255,255,255,0.35) !important; }
+
+/* ── Port summary footer ──────────────────────────────────── */
+
+.bc-node__ports-foot {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bc-node__ports-tag {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+}
+
+.bc-node__ports-tag--left {
+  background: rgba(94,159,232,0.12);
+  color: #5e9fe8;
+}
+
+.bc-node__ports-tag--top {
+  background: rgba(114,188,143,0.12);
+  color: #72bc8f;
+}
+
+.bc-node__ports-tag--bottom {
+  background: rgba(211,168,124,0.12);
+  color: #d3a87c;
+}
+
+/* ── Plugin node: params + resource panel ─────────────────── */
+
+.bc-node__body-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bc-node__params {
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bc-node__params-head {
+  font-size: 8.5px;
+  font-weight: 650;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 2px;
+}
+
+.bc-node__param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.bc-node__param-label {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.bc-node__param-input {
+  font-family: Menlo, Consolas, "SF Mono", monospace;
+  font-size: 10.5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: #ececec;
+  padding: 2px 6px;
+  width: 64px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.bc-node__param-input:focus {
+  border-color: rgba(211,168,124,0.5);
+}
+
+.bc-node__param-input--number {
+  text-align: right;
+}
+
+.bc-node__param-select {
+  font-family: inherit;
+  font-size: 10.5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: #ececec;
+  padding: 2px 4px;
+  width: 72px;
+  outline: none;
+}
+
+.bc-node__param-select:focus {
+  border-color: rgba(211,168,124,0.5);
+}
+
+.bc-node__param-check {
+  width: 14px;
+  height: 14px;
+  accent-color: #d3a87c;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* Resource panel (right side — read-only) */
+.bc-node__res-panel {
+  width: 68px;
+  flex-shrink: 0;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding: 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255,255,255,0.015);
+}
+
+.bc-node__res-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.45);
+}
+
+.bc-node__res-row--idle {
+  color: rgba(255,255,255,0.25);
+}
+
+.bc-node__res-icon {
+  font-size: 9px;
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bc-node__res-value {
+  font-family: Menlo, Consolas, "SF Mono", monospace;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  font-size: 9.5px;
+}
+
+/* Fan-out wave dots in resource panel */
+.bc-node__waves {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.bc-node__wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.bc-node__wave-label {
+  font-size: 8px;
+  font-weight: 650;
+  color: rgba(255,255,255,0.25);
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.bc-node__wave-dots {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.bc-node__wave-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #72bc8f;
+  flex-shrink: 0;
+}

@@ -8,12 +8,13 @@ from .types import TaskNode
 
 def build_layers(nodes: list[TaskNode]) -> list[list[TaskNode]]:
     """
-    Kahn 算法做拓扑分层。同一层之间无依赖关系，可并行执行。
+    Kahn's algorithm for topological layering. Nodes within a layer have no
+    dependencies on each other and may execute in parallel.
 
     Raises:
-        DuplicateTaskError: 任务重名
-        MissingDependencyError: 依赖了不存在的任务
-        DAGCycleError: 检测到环
+        DuplicateTaskError: Duplicate task name
+        MissingDependencyError: Dependency references a non-existent task
+        DAGCycleError: Cycle detected
     """
     by_name: dict[str, TaskNode] = {}
     for node in nodes:

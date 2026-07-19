@@ -127,6 +127,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 BIOCRAFT_PLUGINS_DIR = BASE_DIR / "plugins"
 
+# ── File upload directory ─────────────────────────────────────────────────────
+
+BIOCRAFT_UPLOAD_DIR = BASE_DIR / "uploads"
+
 # ── Runtime config ─────────────────────────────────────────────────────────
 
 BIOCRAFT_RUNTIME = {

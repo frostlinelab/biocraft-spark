@@ -18,3 +18,7 @@ package-lock.json
 
 # LLM data and models
 .claude
+
+# Uploaded workflow files
+uploads/
+!uploads/.gitkeep

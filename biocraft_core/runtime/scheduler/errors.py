@@ -1,14 +1,14 @@
 class SchedulerError(Exception):
-    """Scheduler 错误基类。"""
+    """Base exception for all scheduler errors."""
 
 
 class DAGCycleError(SchedulerError):
-    """DAG 中存在环。"""
+    """A cycle was detected in the DAG."""
 
 
 class MissingDependencyError(SchedulerError):
-    """依赖了一个不在 DAG 中的任务名。"""
+    """A task depends on a task name not present in the DAG."""
 
 
 class DuplicateTaskError(SchedulerError):
-    """DAG 中存在重名任务。"""
+    """Two tasks share the same name."""

@@ -5,15 +5,15 @@ from dataclasses import dataclass, field
 
 @dataclass
 class InputSpec:
-    """一个输入声明：上游哪个 step 的哪种文件。"""
+    """An input declaration: which file type from which upstream step."""
     pattern: str
-    from_step: str | None = None  # None = 匹配所有上游依赖
+    from_step: str | None = None  # None = match all upstream dependencies
     io_type: str = "file"  # "file" | "directory"
 
 
 @dataclass
 class OutputSpec:
-    """一个输出声明：本 step 产出哪种文件。"""
+    """An output declaration: which file type this step produces."""
     pattern: str
     io_type: str = "file"  # "file" | "directory"
 

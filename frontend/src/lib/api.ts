@@ -229,7 +229,7 @@ export async function runPipeline(id: string): Promise<TaskRunDetail | null> {
     const { status, data } = await fetchJson(base + `/api/pipelines/${id}/run/`, {
       method: "POST",
     })
-    if (status !== 201) return null
+    if (status !== 201 && status !== 202) return null
     return data as TaskRunDetail
   } catch {
     return null
@@ -358,5 +358,51 @@ export async function fetchBlocks(): Promise<BlockCategory[]> {
     return (data as { categories: BlockCategory[] }).categories ?? []
   } catch {
     return []
+  }
+}
+
+// ── File upload ──────────────────────────────────────────────────────────────
+
+export interface UploadedFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  path: string
+  sha256: string
+}
+
+export async function uploadFiles(files: File[]): Promise<UploadedFile[]> {
+  const base = getApiBase()
+  const form = new FormData()
+  for (const f of files) {
+    form.append("files", f)
+  }
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 60_000) // 60s for large files
+    const res = await fetch(base + "/api/files/upload/", {
+      method: "POST",
+      body: form,
+      signal: controller.signal,
+    })
+    clearTimeout(timer)
+    if (res.status !== 201) return []
+    const data = await res.json()
+    return (data as { files: UploadedFile[] }).files ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function deleteFile(fileId: string): Promise<boolean> {
+  const base = getApiBase()
+  try {
+    const { status } = await fetchJson(base + `/api/files/${fileId}/`, {
+      method: "DELETE",
+    })
+    return status === 200
+  } catch {
+    return false
   }
 }

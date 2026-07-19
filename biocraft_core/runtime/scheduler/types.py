@@ -21,15 +21,15 @@ class RetryPolicy:
 
 @dataclass(frozen=True)
 class TaskIO:
-    """一个输入或输出声明：pattern + 类型 + 可选的来源 step。"""
+    """An input or output declaration: pattern + type + optional source step."""
     pattern: str
     io_type: str = "file"  # "file" | "directory"
-    from_step: str | None = None  # 仅 input 使用；None = 匹配所有上游
+    from_step: str | None = None  # input only; None = match all upstream
 
 
 @dataclass(frozen=True)
 class TaskNode:
-    """DAG 中的一个任务节点 = 一次容器执行。"""
+    """A single task node in the DAG = one container execution."""
 
     name: str
     image: str

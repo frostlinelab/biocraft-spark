@@ -11,12 +11,12 @@ from .types import DAGRunResult, TaskNode, TaskResult, TaskStatus
 
 class DAGEngine:
     """
-    v0.1 调度器:
-      - 拓扑分层
-      - 同层并行
-      - 节点失败按 RetryPolicy 重试，耗尽后传播中止
-      - 任意节点最终失败 -> 后续层全部 SKIPPED
-      - 不做持久化
+    v0.1 Scheduler:
+      - Topological layering (Kahn's algorithm)
+      - Parallel execution within each layer
+      - Per-node retry via RetryPolicy; abort propagation on exhaustion
+      - Any node failure → all subsequent layers SKIPPED
+      - No persistence (in-memory only)
     """
 
     def __init__(self, executor: DockerContainerExecutor, max_workers: int = 4):

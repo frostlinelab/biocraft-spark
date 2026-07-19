@@ -40,11 +40,11 @@
               "properties": {
                 "from": {
                   "type": "string",
-                  "description": "上游 step 名称；不填则匹配所有上游依赖"
+                  "description": "Upstream step name; omit to match all upstream dependencies"
                 },
                 "pattern": {
                   "type": "string",
-                  "description": "文件 glob 模式，如 *.gff"
+                  "description": "File glob pattern, e.g. *.gff"
                 },
                 "type": {
                   "type": "string",
@@ -63,7 +63,7 @@
               "properties": {
                 "pattern": {
                   "type": "string",
-                  "description": "文件 glob 模式，如 *.gff"
+                  "description": "File glob pattern, e.g. *.gff"
                 },
                 "type": {
                   "type": "string",

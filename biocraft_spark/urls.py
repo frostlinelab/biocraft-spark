@@ -20,6 +20,8 @@ from workbench.views import docker_ping, executor_ping, home, plugin_ping, sched
 from workbench.api import (
     block_list,
     dashboard_stats,
+    file_delete,
+    file_upload,
     pipeline_create,
     pipeline_detail,
     pipeline_list,
@@ -44,6 +46,8 @@ urlpatterns = [
     # REST API
     path("api/runtime-config/", runtime_config, name="runtime_config"),
     path("api/blocks/", block_list, name="block_list"),
+    path("api/files/upload/", file_upload, name="file_upload"),
+    path("api/files/<str:file_id>/", file_delete, name="file_delete"),
     path("api/dashboard-stats/", dashboard_stats, name="dashboard_stats"),
     path("api/pipelines/", pipeline_list, name="pipeline_list"),
     path("api/pipelines/create/", pipeline_create, name="pipeline_create"),

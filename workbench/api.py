@@ -1,7 +1,13 @@
 """REST API views for pipelines and task runs."""
 
+import hashlib
 import json
+import os
+import threading
+import uuid
+from pathlib import Path
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -9,6 +15,11 @@ from django.views.decorators.http import require_http_methods
 from .models import Pipeline, TaskRun
 
 from biocraft_core.plugin import builtin_blocks, discover_plugins, BlockParam, BlockPort, BlockSpec, PluginBlocksSpec
+
+# ── File upload storage directory ───────────────────────────────────────────────
+
+UPLOAD_DIR = Path(getattr(settings, "BIOCRAFT_UPLOAD_DIR", settings.BASE_DIR / "uploads"))
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Runtime config API ──────────────────────────────────────────────────────
@@ -82,7 +93,7 @@ def block_list(request):
     builtins = builtin_blocks()
     categories.append({
         "name": "builtin",
-        "label": "内置",
+        "label": "Built-in",
         "description": "Built-in workflow control blocks",
         "icon": "builtin",
         "blocks": [_serialize_block(b) for b in builtins],
@@ -99,6 +110,73 @@ def block_list(request):
         })
 
     return JsonResponse({"categories": categories})
+
+
+# ── File upload API ──────────────────────────────────────────────────────────────
+
+@csrf_exempt
+def file_upload(request):
+    """POST /api/files/upload/ — upload one or more files for workflow input
+
+    Accepts multipart/form-data with one or more ``file`` fields.
+    Returns a flat list of file metadata objects safe to store in node data.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    uploaded = request.FILES.getlist("files")
+    if not uploaded:
+        return JsonResponse({"error": "No files provided"}, status=400)
+
+    results: list[dict] = []
+    for f in uploaded:
+        # Generate a collision-resistant name: <uuid8>_<original_name>
+        name_uuid = uuid.uuid4().hex[:8]
+        safe_name = f"{name_uuid}_{f.name}"
+        dest = UPLOAD_DIR / safe_name
+
+        # Stream to disk in chunks
+        with open(dest, "wb") as out:
+            for chunk in f.chunks():
+                out.write(chunk)
+
+        # SHA-256 checksum for integrity
+        file_hash = hashlib.sha256()
+        with open(dest, "rb") as fh:
+            while True:
+                block = fh.read(8192)
+                if not block:
+                    break
+                file_hash.update(block)
+
+        results.append({
+            "id": safe_name,
+            "name": f.name,
+            "size": dest.stat().st_size,
+            "type": f.content_type or "application/octet-stream",
+            "path": str(dest),
+            "sha256": file_hash.hexdigest(),
+        })
+
+    return JsonResponse({"files": results}, status=201)
+
+
+@csrf_exempt
+def file_delete(request, file_id: str):
+    """DELETE /api/files/<file_id>/ — remove an uploaded file from disk"""
+    if request.method != "DELETE":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    dest = UPLOAD_DIR / file_id
+    # Prevent path traversal
+    if dest.resolve().parent != UPLOAD_DIR.resolve():
+        return JsonResponse({"error": "Invalid file id"}, status=400)
+
+    try:
+        dest.unlink()
+    except FileNotFoundError:
+        pass
+    return JsonResponse({"deleted": True}, status=200)
 
 
 # ── Pipeline API ──────────────────────────────────────────────────────────────
@@ -187,9 +265,127 @@ def pipeline_detail(request, pk: str):
     })
 
 
+def _run_pipeline_bg(run_id: int, pipeline_yaml: str, plugins_dir) -> None:
+    """Execute a pipeline in a background thread and update the TaskRun in-place.
+
+    Each background thread gets its own Django DB connection via close_old_connections().
+    SQLite serialises writes so concurrent runs are safe at the DB level.
+    """
+    from django.db import close_old_connections
+    from django.utils import timezone
+
+    close_old_connections()  # ensure a fresh connection for this thread
+
+    try:
+        tr = TaskRun.objects.get(pk=run_id)
+    except TaskRun.DoesNotExist:
+        return
+
+    try:
+        graph: dict = json.loads(pipeline_yaml) if pipeline_yaml else {}
+    except (json.JSONDecodeError, ValueError):
+        graph = {}
+
+    nodes_raw = graph.get("nodes", [])
+    node_count = max(len(nodes_raw), 1)
+    has_runtime = any(
+        n.get("data", {}).get("hasRuntime", False)
+        for n in nodes_raw
+        if isinstance(n, dict)
+    )
+
+    try:
+        if has_runtime:
+            from django.conf import settings as djsettings
+            from biocraft_core.plugin.resolver import get_all_block_specs, resolve_graph_to_task_nodes
+            from biocraft_core.runtime.executor import DockerContainerExecutor
+            from biocraft_core.runtime.resources import ResourcePool, RuntimeConfig
+            from biocraft_core.runtime.scheduler.engine import DAGEngine
+
+            cfg_raw = getattr(djsettings, "BIOCRAFT_RUNTIME", {})
+            cfg = RuntimeConfig(**cfg_raw) if cfg_raw else RuntimeConfig()
+            pool = ResourcePool(cfg)
+
+            block_specs = get_all_block_specs(plugins_dir)
+            task_nodes = resolve_graph_to_task_nodes(graph, block_specs, pool)
+
+            if task_nodes:
+                executor = DockerContainerExecutor()
+                engine = DAGEngine(executor, max_workers=cfg.max_parallel_containers)
+                dag_result = engine.run(task_nodes)
+
+                results = [
+                    {
+                        "node_id": tn.name,
+                        "label": tn.name,
+                        "status": dag_result.results[tn.name].status.value,
+                        "step": i + 1,
+                        "total": len(task_nodes),
+                    }
+                    for i, tn in enumerate(task_nodes)
+                    if tn.name in dag_result.results
+                ]
+                tr.status = (
+                    TaskRun.Status.SUCCEEDED if dag_result.succeeded
+                    else TaskRun.Status.FAILED
+                )
+                tr.result_json = {
+                    "nodes": results,
+                    "total_steps": len(task_nodes),
+                    "engine": "dag",
+                    "dag_result": dag_result.to_dict(),
+                }
+            else:
+                # Graph only has built-in blocks — instant success
+                tr.status = TaskRun.Status.SUCCEEDED
+                tr.result_json = {
+                    "nodes": [
+                        {
+                            "node_id": n.get("id"),
+                            "label": n.get("data", {}).get("label", "unknown"),
+                            "status": "completed",
+                            "step": i + 1,
+                            "total": node_count,
+                        }
+                        for i, n in enumerate(nodes_raw)
+                        if isinstance(n, dict)
+                    ],
+                    "total_steps": node_count,
+                }
+        else:
+            # Simulation mode
+            tr.status = TaskRun.Status.SUCCEEDED
+            tr.result_json = {
+                "nodes": [
+                    {
+                        "node_id": n.get("id"),
+                        "label": n.get("data", {}).get("label", "unknown"),
+                        "status": "completed",
+                        "step": i + 1,
+                        "total": node_count,
+                    }
+                    for i, n in enumerate(nodes_raw, 0)
+                    if isinstance(n, dict)
+                ],
+                "total_steps": node_count,
+            }
+    except Exception as exc:
+        tr.status = TaskRun.Status.FAILED
+        tr.error_message = f"{type(exc).__name__}: {exc}"
+        tr.result_json = {"error": str(exc)}
+
+    tr.finished_at = timezone.now()
+    tr.save()
+
+
 @csrf_exempt
 def pipeline_run(request, pk: str):
-    """POST /api/pipelines/<id>/run/ — create a new TaskRun and execute it"""
+    """POST /api/pipelines/<id>/run/ — create a TaskRun and start execution asynchronously.
+
+    Returns HTTP 202 immediately with the new TaskRun (status=running).
+    The caller should poll GET /api/task-runs/<id>/ until status is no longer
+    'running' or 'pending'.
+    """
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
     try:
@@ -200,108 +396,17 @@ def pipeline_run(request, pk: str):
     from django.conf import settings
     from django.utils import timezone
 
-    tr = TaskRun.objects.create(
-        pipeline=p,
-        status=TaskRun.Status.PENDING,
-    )
-
-    tr.status = TaskRun.Status.RUNNING
+    tr = TaskRun.objects.create(pipeline=p, status=TaskRun.Status.RUNNING)
     tr.started_at = timezone.now()
     tr.save()
 
-    # Parse the saved React Flow graph
-    try:
-        graph = json.loads(p.yaml_content) if p.yaml_content else {}
-    except (json.JSONDecodeError, ValueError):
-        graph = {}
-
-    nodes_raw = graph.get("nodes", [])
-    node_count = len(nodes_raw) if nodes_raw else 1
-
-    # Check if any node has container runtime
-    has_runtime_blocks = any(
-        n.get("data", {}).get("hasRuntime", False)
-        for n in nodes_raw
-        if isinstance(n, dict)
+    plugins_dir = getattr(settings, "BIOCRAFT_PLUGINS_DIR", None)
+    t = threading.Thread(
+        target=_run_pipeline_bg,
+        args=(tr.id, p.yaml_content, plugins_dir),
+        daemon=True,
     )
-
-    if has_runtime_blocks:
-        # ── Real execution via DAGEngine ──────────────────────────
-        from biocraft_core.plugin.resolver import get_all_block_specs, resolve_graph_to_task_nodes
-        from biocraft_core.runtime.executor import DockerContainerExecutor
-        from biocraft_core.runtime.scheduler.engine import DAGEngine
-
-        try:
-            plugins_dir = getattr(settings, "BIOCRAFT_PLUGINS_DIR", None)
-            block_specs = get_all_block_specs(plugins_dir)
-            task_nodes = resolve_graph_to_task_nodes(graph, block_specs)
-
-            if task_nodes:
-                executor = DockerContainerExecutor()
-                engine = DAGEngine(executor)
-                dag_result = engine.run(task_nodes)
-
-                results = [
-                    {
-                        "node_id": task_node.name,
-                        "label": task_node.name,
-                        "status": dag_result.results[task_node.name].status.value,
-                        "step": i + 1,
-                        "total": len(task_nodes),
-                    }
-                    for i, task_node in enumerate(task_nodes)
-                    if task_node.name in dag_result.results
-                ]
-
-                tr.status = (
-                    TaskRun.Status.SUCCEEDED
-                    if dag_result.succeeded
-                    else TaskRun.Status.FAILED
-                )
-                tr.result_json = {
-                    "nodes": results,
-                    "total_steps": len(task_nodes),
-                    "engine": "dag",
-                    "dag_result": dag_result.to_dict(),
-                }
-            else:
-                # No runtime blocks resolved (e.g. only built-ins)
-                results = [
-                    {
-                        "node_id": n.get("id"),
-                        "label": n.get("data", {}).get("label", "unknown"),
-                        "status": "completed",
-                        "step": i + 1,
-                        "total": node_count,
-                    }
-                    for i, n in enumerate(nodes_raw)
-                    if isinstance(n, dict)
-                ]
-                tr.status = TaskRun.Status.SUCCEEDED
-                tr.result_json = {"nodes": results, "total_steps": node_count}
-        except Exception as exc:
-            tr.status = TaskRun.Status.FAILED
-            tr.error_message = f"{type(exc).__name__}: {exc}"
-            tr.result_json = {"error": str(exc)}
-    else:
-        # ── Simulation mode (built-in blocks only) ─────────────────
-        results = []
-        for i, node in enumerate(nodes_raw, 1):
-            if isinstance(node, dict):
-                results.append({
-                    "node_id": node.get("id"),
-                    "label": node.get("data", {}).get("label", "unknown"),
-                    "status": "completed",
-                    "step": i,
-                    "total": node_count,
-                })
-        if not results:
-            results.append({"status": "completed", "step": 1, "total": 1})
-        tr.status = TaskRun.Status.SUCCEEDED
-        tr.result_json = {"nodes": results, "total_steps": node_count}
-
-    tr.finished_at = timezone.now()
-    tr.save()
+    t.start()
 
     return JsonResponse({
         "id": tr.id,
@@ -309,11 +414,11 @@ def pipeline_run(request, pk: str):
         "pipeline_name": tr.pipeline.name,
         "status": tr.status,
         "started_at": tr.started_at.isoformat() if tr.started_at else None,
-        "finished_at": tr.finished_at.isoformat() if tr.finished_at else None,
-        "result_json": tr.result_json,
-        "error_message": tr.error_message,
+        "finished_at": None,
+        "result_json": None,
+        "error_message": None,
         "created_at": tr.created_at.isoformat(),
-    }, status=201)
+    }, status=202)
 
 
 # ── TaskRun API ───────────────────────────────────────────────────────────────
