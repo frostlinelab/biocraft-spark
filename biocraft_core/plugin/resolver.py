@@ -15,12 +15,14 @@ are replaced with the node's current paramValues before execution.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any
 
 from biocraft_core.plugin.builtins import builtin_blocks
 from biocraft_core.plugin.discovery import discover_plugins
 from biocraft_core.plugin.schema import BlockSpec
 from biocraft_core.runtime.resources import ResourcePool
+from biocraft_core.runtime.executor import VolumeMount
 from biocraft_core.runtime.scheduler.types import RetryPolicy, TaskIO, TaskNode
 
 
@@ -61,6 +63,10 @@ def resolve_graph_to_task_nodes(
     graph: dict[str, Any],
     block_specs: list[BlockSpec],
     resource_pool: ResourcePool | None = None,
+    input_dir: str | Path | None = None,
+    output_dir: str | Path | None = None,
+    mount_input_dir: str | Path | None = None,
+    mount_output_dir: str | Path | None = None,
 ) -> list[TaskNode]:
     """Convert a React Flow graph dict to a list of TaskNode ready for execution.
 
@@ -102,8 +108,9 @@ def resolve_graph_to_task_nodes(
         if src and tgt:
             reverse_adjacency.setdefault(tgt, []).append(src)
 
-    # Input nodes → list of file names
-    input_files_by_id: dict[str, list[str]] = {}
+    # Input nodes → (stored upload id, display name). The upload id is used to
+    # locate the host file; the display name is what the plugin sees in /data/input.
+    input_files_by_id: dict[str, list[tuple[str, str]]] = {}
     for n in nodes:
         if not isinstance(n, dict):
             continue
@@ -112,7 +119,12 @@ def resolve_graph_to_task_nodes(
             files = data.get("files", [])
             if isinstance(files, list):
                 input_files_by_id[n["id"]] = [
-                    f.get("name", f"file_{i}") if isinstance(f, dict) else str(f)
+                    (
+                        str(f.get("id", f.get("name", f"file_{i}"))),
+                        str(f.get("name", f"file_{i}")),
+                    )
+                    if isinstance(f, dict)
+                    else (str(f), str(f))
                     for i, f in enumerate(files)
                 ]
 
@@ -167,7 +179,7 @@ def resolve_graph_to_task_nodes(
                 chain_dep_names.extend(node_to_task_names[uid])
 
         # Collect input files from upstream Input nodes
-        all_input_files: list[str] = []
+        all_input_files: list[tuple[str, str]] = []
         for uid in upstream_ids:
             if uid in input_files_by_id:
                 all_input_files.extend(input_files_by_id[uid])
@@ -188,7 +200,7 @@ def resolve_graph_to_task_nodes(
             for wave_files in lane_plan.lanes:
                 this_wave_names: list[str] = []
 
-                for file_name in wave_files:
+                for file_id, file_name in wave_files:
                     task_name = (
                         f"{block_spec.plugin_name}__{block_spec.name}"
                         f"__{ordinal}__{file_name}"
@@ -210,6 +222,15 @@ def resolve_graph_to_task_nodes(
                         TaskIO(pattern=p.pattern, io_type=p.port_type)
                         for p in block_spec.outputs
                     )
+                    volumes = _task_volumes(
+                        input_dir=input_dir,
+                        output_dir=output_dir,
+                        mount_input_dir=mount_input_dir,
+                        mount_output_dir=mount_output_dir,
+                        task_name=task_name,
+                        input_file_id=file_id,
+                        input_file_name=file_name,
+                    )
 
                     task_nodes.append(
                         TaskNode(
@@ -217,6 +238,7 @@ def resolve_graph_to_task_nodes(
                             image=block_spec.runtime.image,
                             command=command,
                             env=dict(block_spec.runtime.env),
+                            volumes=volumes,
                             depends_on=tuple(depends_on),
                             inputs=inputs,
                             outputs=outputs,
@@ -242,6 +264,13 @@ def resolve_graph_to_task_nodes(
                 TaskIO(pattern=p.pattern, io_type=p.port_type)
                 for p in block_spec.outputs
             )
+            volumes = _task_volumes(
+                input_dir=input_dir,
+                output_dir=output_dir,
+                mount_input_dir=mount_input_dir,
+                mount_output_dir=mount_output_dir,
+                task_name=task_name,
+            )
 
             task_nodes.append(
                 TaskNode(
@@ -249,6 +278,7 @@ def resolve_graph_to_task_nodes(
                     image=block_spec.runtime.image,
                     command=command,
                     env=dict(block_spec.runtime.env),
+                    volumes=volumes,
                     depends_on=tuple(chain_dep_names),
                     inputs=inputs,
                     outputs=outputs,
@@ -257,6 +287,40 @@ def resolve_graph_to_task_nodes(
             )
 
     return task_nodes
+
+
+def _task_volumes(
+    *,
+    input_dir: str | Path | None,
+    output_dir: str | Path | None,
+    mount_input_dir: str | Path | None,
+    mount_output_dir: str | Path | None,
+    task_name: str,
+    input_file_id: str | None = None,
+    input_file_name: str | None = None,
+) -> tuple[VolumeMount, ...]:
+    """Build isolated task mounts when workflow storage directories are supplied."""
+    volumes: list[VolumeMount] = []
+
+    if input_dir is not None and input_file_id is not None:
+        validation_root = Path(input_dir).resolve()
+        validation_file = (validation_root / input_file_id).resolve()
+        if validation_file.parent != validation_root or not validation_file.is_file():
+            raise ValueError(f"Uploaded input file is unavailable: {input_file_id}")
+        mount_root = Path(mount_input_dir or validation_root).resolve()
+        host_file = mount_root / input_file_id
+        container_name = Path(input_file_name or input_file_id).name
+        volumes.append(VolumeMount(host_file, f"/data/input/{container_name}", "ro"))
+
+    if output_dir is not None:
+        # Create through Django's visible project mount. The Docker host may use
+        # a different absolute path for the same shared project directory.
+        (Path(output_dir).resolve() / task_name).mkdir(parents=True, exist_ok=True)
+        mount_root = Path(mount_output_dir or output_dir).resolve()
+        task_output_dir = mount_root / task_name
+        volumes.append(VolumeMount(task_output_dir, "/data/output", "rw"))
+
+    return tuple(volumes)
 
 
 def get_all_block_specs(plugins_dir: str | None = None) -> list[BlockSpec]:

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -130,6 +131,9 @@ BIOCRAFT_PLUGINS_DIR = BASE_DIR / "plugins"
 # ── File upload directory ─────────────────────────────────────────────────────
 
 BIOCRAFT_UPLOAD_DIR = BASE_DIR / "uploads"
+
+# When Django runs in Compose, Docker bind-mount paths must be host-visible.
+BIOCRAFT_DOCKER_HOST_PROJECT_DIR = os.environ.get("BIOCRAFT_DOCKER_HOST_PROJECT_DIR", "")
 
 # ── Runtime config ─────────────────────────────────────────────────────────
 

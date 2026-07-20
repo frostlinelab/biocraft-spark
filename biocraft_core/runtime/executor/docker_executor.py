@@ -257,8 +257,8 @@ def _build_docker_volumes(volumes: Sequence[VolumeMount]) -> dict[str, dict[str,
 
     for volume in volumes:
         host_path = Path(volume.host_path).resolve()
-        host_path.mkdir(parents=True, exist_ok=True)
-
+        # Docker resolves host paths. Under Compose the daemon has a different
+        # filesystem namespace from Django, so validation belongs upstream.
         docker_volumes[str(host_path)] = volume.to_docker_volume()
 
     return docker_volumes

@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
+from biocraft_core.runtime.executor import VolumeMount
+
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -36,6 +38,7 @@ class TaskNode:
     command: list[str]
     depends_on: tuple[str, ...] = ()
     env: dict[str, str] = field(default_factory=dict)
+    volumes: tuple[VolumeMount, ...] = ()
     inputs: tuple[TaskIO, ...] = ()
     outputs: tuple[TaskIO, ...] = ()
     retry: RetryPolicy = field(default_factory=RetryPolicy)

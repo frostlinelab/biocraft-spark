@@ -174,7 +174,7 @@ blocks:
   - name: run-fastqc
     label: FastQC
     runtime:
-      image: biocontainers/fastqc:v0.11.9
+      image: biocontainers/fastqc:v0.11.9_cv8
       command: ["sh", "-c", "fastqc -q -o /data/output -t ${params.threads} /data/input/*"]
       resources: { min_threads: 1, min_memory_gb: 1.0 }
     inputs:

@@ -22,6 +22,19 @@ UPLOAD_DIR = Path(getattr(settings, "BIOCRAFT_UPLOAD_DIR", settings.BASE_DIR / "
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _docker_host_path(path: Path) -> Path:
+    """Translate a project path to the host path seen by the Docker daemon."""
+    host_project_dir = str(getattr(settings, "BIOCRAFT_DOCKER_HOST_PROJECT_DIR", ""))
+    if not host_project_dir:
+        return path
+
+    try:
+        relative_path = path.resolve().relative_to(settings.BASE_DIR.resolve())
+    except ValueError:
+        return path
+    return Path(host_project_dir).resolve() / relative_path
+
+
 # ── Runtime config API ──────────────────────────────────────────────────────
 
 def runtime_config(request):
@@ -314,7 +327,16 @@ def _run_pipeline_bg(run_id: int, pipeline_yaml: str, plugins_dir) -> None:
             pool = ResourcePool(cfg)
 
             block_specs = get_all_block_specs(plugins_dir)
-            task_nodes = resolve_graph_to_task_nodes(graph, block_specs, pool)
+            run_output_dir = Path(djsettings.BASE_DIR) / "run_outputs" / f"task-run-{run_id}"
+            task_nodes = resolve_graph_to_task_nodes(
+                graph,
+                block_specs,
+                pool,
+                input_dir=UPLOAD_DIR,
+                output_dir=run_output_dir,
+                mount_input_dir=_docker_host_path(UPLOAD_DIR),
+                mount_output_dir=_docker_host_path(run_output_dir),
+            )
 
             if task_nodes:
                 executor = DockerContainerExecutor()

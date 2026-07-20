@@ -66,6 +66,7 @@ class DAGEngine:
                     image=node.image,
                     command=node.command,
                     environment=node.env,
+                    volumes=node.volumes,
                 )
             )
         except Exception as exc:

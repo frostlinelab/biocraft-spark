@@ -118,7 +118,7 @@ class FastQCPluginTests(TestCase):
         self.assertEqual(block.name, "run-fastqc")
         self.assertEqual(block.plugin_name, "fastqc")
         self.assertIsNotNone(block.runtime)
-        self.assertEqual(block.runtime.image, "biocontainers/fastqc:v0.11.9")
+        self.assertEqual(block.runtime.image, "biocontainers/fastqc:v0.11.9_cv8")
         self.assertEqual(block.runtime.resources.min_threads, 1)
         self.assertEqual(block.runtime.resources.min_memory_gb, 1.0)
         self.assertTrue(any(p.name == "threads" for p in block.params))
@@ -174,9 +174,48 @@ class FastQCPluginTests(TestCase):
         self.assertEqual(len(tasks), 2)
 
         for task in tasks:
-            self.assertEqual(task.image, "biocontainers/fastqc:v0.11.9")
+            self.assertEqual(task.image, "biocontainers/fastqc:v0.11.9_cv8")
             # ${params.threads} must be expanded to the node value
             joined = " ".join(task.command)
             self.assertIn("-t 3", joined)
             self.assertNotIn("${params.threads}", joined)
             self.assertTrue(task.name.startswith("fastqc__run-fastqc__"))
+
+    def test_resolve_fastqc_mounts_each_uploaded_file_and_output(self):
+        specs = get_all_block_specs(str(self.plugins_dir))
+        input_dir = Path(settings.BASE_DIR) / "tests" / "fastqc" / "inputs"
+        output_dir = Path(settings.BASE_DIR) / "tests" / "fastqc" / "outputs"
+        graph = {
+            "nodes": [
+                {
+                    "id": "in1",
+                    "data": {
+                        "blockPlugin": "builtin",
+                        "blockName": "input",
+                        "files": [{"id": "fastqc_sample.fastq", "name": "sample.fastq"}],
+                    },
+                },
+                {
+                    "id": "qc1",
+                    "data": {
+                        "blockPlugin": "fastqc",
+                        "blockName": "run-fastqc",
+                        "hasRuntime": True,
+                    },
+                },
+            ],
+            "edges": [{"source": "in1", "target": "qc1"}],
+        }
+
+        tasks = resolve_graph_to_task_nodes(
+            graph,
+            specs,
+            input_dir=input_dir,
+            output_dir=output_dir,
+        )
+
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0].volumes[0].host_path, input_dir / "fastqc_sample.fastq")
+        self.assertEqual(tasks[0].volumes[0].container_path, "/data/input/sample.fastq")
+        self.assertEqual(tasks[0].volumes[0].mode, "ro")
+        self.assertEqual(tasks[0].volumes[1].container_path, "/data/output")

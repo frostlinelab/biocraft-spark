@@ -92,7 +92,7 @@ blocks:
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `image` | string | ✅ | Docker 镜像，如 `biocontainers/fastqc:v0.11.9` |
+| `image` | string | ✅ | Docker 镜像，如 `biocontainers/fastqc:v0.11.9_cv8` |
 | `command` | string[] | ✅ | 容器启动命令，数组格式。支持 `${params.xxx}` 引用参数。**注意：** Docker exec 形式不会展开 `*`，需要 glob 时请用 `sh -c "..."` |
 | `env` | object | ❌ | 环境变量键值对 |
 | `resources` | object | ❌ | 每实例资源需求：`min_threads`（默认 1）、`min_memory_gb`（默认 1.0） |
@@ -288,7 +288,7 @@ blocks:
     icon: beaker
 
     runtime:
-      image: biocontainers/fastqc:v0.11.9
+      image: biocontainers/fastqc:v0.11.9_cv8
       # Shell form so globs expand (Docker exec form does not expand *).
       command:
         - "sh"
@@ -412,7 +412,7 @@ blocks:
     description: 生成质量报告
     icon: beaker
     runtime:
-      image: biocontainers/fastqc:v0.11.9
+      image: biocontainers/fastqc:v0.11.9_cv8
       command: ["fastqc", "-o", "/data/output", "/data/input/*.fastq"]
     inputs:
       - name: reads
