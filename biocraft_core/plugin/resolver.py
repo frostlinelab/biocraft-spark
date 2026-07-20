@@ -137,13 +137,20 @@ def resolve_graph_to_task_nodes(
     task_nodes: list[TaskNode] = []
     # node_id → flat list of all task names produced (across all waves)
     node_to_task_names: dict[str, list[str]] = {}
+    # Count how many times each (plugin, block) pair appears so task names
+    # carry a stable ordinal rather than the transient canvas node id.
+    block_ordinal: dict[tuple[str, str], int] = {}
 
     for n in runtime_nodes:
         node_id: str = n.get("id", "")
         data = n.get("data", {})
         plugin = data.get("blockPlugin", "")
         block_name = data.get("blockName", "")
-        block_spec = block_by_key[(plugin, block_name)]
+        block_key = (plugin, block_name)
+        block_spec = block_by_key[block_key]
+
+        block_ordinal[block_key] = block_ordinal.get(block_key, 0) + 1
+        ordinal = block_ordinal[block_key]
 
         if block_spec.runtime is None:
             continue
@@ -184,7 +191,7 @@ def resolve_graph_to_task_nodes(
                 for file_name in wave_files:
                     task_name = (
                         f"{block_spec.plugin_name}__{block_spec.name}"
-                        f"__{node_id}__{file_name}"
+                        f"__{ordinal}__{file_name}"
                     )
                     this_wave_names.append(task_name)
 
@@ -224,7 +231,7 @@ def resolve_graph_to_task_nodes(
 
         else:
             # ── Single instance ───────────────────────────────────────────────
-            task_name = f"{block_spec.plugin_name}__{block_spec.name}__{node_id}"
+            task_name = f"{block_spec.plugin_name}__{block_spec.name}__{ordinal}"
             node_to_task_names[node_id] = [task_name]
 
             inputs = tuple(

@@ -93,8 +93,9 @@ blocks:
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `image` | string | ✅ | Docker 镜像，如 `biocontainers/fastqc:v0.11.9` |
-| `command` | string[] | ✅ | 容器启动命令，数组格式。支持 `${params.xxx}` 引用参数 |
+| `command` | string[] | ✅ | 容器启动命令，数组格式。支持 `${params.xxx}` 引用参数。**注意：** Docker exec 形式不会展开 `*`，需要 glob 时请用 `sh -c "..."` |
 | `env` | object | ❌ | 环境变量键值对 |
+| `resources` | object | ❌ | 每实例资源需求：`min_threads`（默认 1）、`min_memory_gb`（默认 1.0） |
 
 ---
 
@@ -192,7 +193,8 @@ params:
 
 ```yaml
 runtime:
-  command: ["fastqc", "-t", "${params.threads}", "-o", "/data/output", "/data/input/*.fastq"]
+  # Prefer sh -c when the command needs shell glob expansion
+  command: ["sh", "-c", "fastqc -t ${params.threads} -o /data/output /data/input/*"]
 ```
 
 ---
@@ -269,50 +271,55 @@ BIOCRAFT_RUNTIME = {
 
 ## 完整示例
 
-### 示例 1：FastQC（单积木插件）
+### 示例 1：FastQC（单积木插件，官方首个插件）
+
+> 仓库内正式文件：[`plugins/fastqc.plugin.yaml`](../plugins/fastqc.plugin.yaml)
 
 ```yaml
 name: fastqc
 version: "1.0.0"
-description: Quality control for sequencing reads
+description: Quality control for high-throughput sequencing reads
 icon: microscope
 
 blocks:
   - name: run-fastqc
     label: FastQC
-    description: Run FastQC quality control on sequencing reads
+    description: Run FastQC quality control on sequencing reads (FASTQ / FASTQ.GZ)
     icon: beaker
 
     runtime:
       image: biocontainers/fastqc:v0.11.9
+      # Shell form so globs expand (Docker exec form does not expand *).
       command:
-        - "fastqc"
-        - "-o", "/data/output"
-        - "-t", "${params.threads}"
-        - "/data/input/*.fastq"
+        - "sh"
+        - "-c"
+        - "fastqc -q -o /data/output -t ${params.threads} /data/input/*"
+      resources:
+        min_threads: 1
+        min_memory_gb: 1.0
 
     inputs:
       - name: reads
         label: Sequencing Reads
         type: file
-        pattern: "*.fastq"
+        pattern: "*.fastq*"
         multiple: true
 
     outputs:
       - name: report
         label: QC Report
         type: file
-        pattern: "*.html"
+        pattern: "*_fastqc.html"
       - name: data
         label: QC Data
         type: file
-        pattern: "*.zip"
+        pattern: "*_fastqc.zip"
 
     params:
       - name: threads
         label: Threads
         type: integer
-        default: 4
+        default: 2
         min: 1
         max: 32
 ```

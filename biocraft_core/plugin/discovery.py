@@ -15,6 +15,7 @@ import jsonschema
 from biocraft_core.plugin.schema import (
     BlockPort,
     BlockParam,
+    BlockResources,
     BlockRuntime,
     BlockSpec,
     PluginBlocksSpec,
@@ -110,10 +111,16 @@ def _parse_blocks(
         runtime_raw = b.get("runtime", {})
         runtime = None
         if runtime_raw:
+            res_raw = runtime_raw.get("resources") or {}
+            resources = BlockResources(
+                min_threads=int(res_raw.get("min_threads", 1)),
+                min_memory_gb=float(res_raw.get("min_memory_gb", 1.0)),
+            )
             runtime = BlockRuntime(
                 image=runtime_raw.get("image", ""),
                 command=runtime_raw.get("command", []),
                 env=runtime_raw.get("env", {}),
+                resources=resources,
             )
 
         # Ports

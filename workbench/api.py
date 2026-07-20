@@ -64,6 +64,12 @@ def _serialize_port(p: BlockPort) -> dict:
 
 
 def _serialize_block(b: BlockSpec) -> dict:
+    resources = None
+    if b.runtime is not None and b.runtime.resources is not None:
+        resources = {
+            "minThreads": b.runtime.resources.min_threads,
+            "minMemoryGb": b.runtime.resources.min_memory_gb,
+        }
     return {
         "name": b.name,
         "label": b.label,
@@ -72,6 +78,7 @@ def _serialize_block(b: BlockSpec) -> dict:
         "pluginName": b.plugin_name,
         "pluginVersion": b.plugin_version,
         "hasRuntime": b.runtime is not None,
+        "resources": resources,
         "inputs": [_serialize_port(p) for p in b.inputs],
         "outputs": [_serialize_port(p) for p in b.outputs],
         "params": [_serialize_param(p) for p in b.params],

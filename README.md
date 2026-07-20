@@ -163,22 +163,33 @@ biocraft-spark/
 
 Plugins are YAML files that define one or more **blocks** (draggable workflow nodes). Each block declares its container runtime, typed input/output ports, and configurable parameters. Biocraft automatically discovers plugins in the `plugins/` directory and surfaces them as categorized blocks in the workflow editor.
 
+**First official plugin:** [`plugins/fastqc.plugin.yaml`](plugins/fastqc.plugin.yaml) — FastQC quality control for sequencing reads.
+
 ```yaml
 name: fastqc
 version: "1.0.0"
-description: Quality control for sequencing reads
-steps:
+description: Quality control for high-throughput sequencing reads
+icon: microscope
+blocks:
   - name: run-fastqc
-    image: biocontainers/fastqc:v0.11.9
-    command: ["fastqc", "-o", "/data/output", "/data/input/*.fastq"]
+    label: FastQC
+    runtime:
+      image: biocontainers/fastqc:v0.11.9
+      command: ["sh", "-c", "fastqc -q -o /data/output -t ${params.threads} /data/input/*"]
+      resources: { min_threads: 1, min_memory_gb: 1.0 }
     inputs:
-      - pattern: "*.fastq"
+      - name: reads
         type: file
+        pattern: "*.fastq*"
+        multiple: true
     outputs:
-      - pattern: "*.html"
+      - name: report
         type: file
-      - pattern: "*.zip"
-        type: file
+        pattern: "*_fastqc.html"
+    params:
+      - name: threads
+        type: integer
+        default: 2
 ```
 
 > See [CONTRIBUTING.md](CONTRIBUTING.md) for the plugin development guide and [docs/plugin-authoring.md](docs/plugin-authoring.md) for the complete plugin authoring reference.
@@ -222,7 +233,7 @@ REST API for the workflow frontend:
 |---|---|---|
 | **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
 | **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Tauri desktop integration · Multi-workflow management · Task run tracking | 🔄 In progress |
-| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (Prokka, Roary, …) · Plugin marketplace | ⏳ Planned |
+| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC ✅, Prokka, Roary, …) · Plugin marketplace | 🔄 In progress |
 | **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
 
 ---

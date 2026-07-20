@@ -5,6 +5,7 @@ from .resolver import get_all_block_specs, resolve_graph_to_task_nodes
 from .schema import (
     BlockParam,
     BlockPort,
+    BlockResources,
     BlockRuntime,
     BlockSpec,
     InputSpec,
@@ -28,6 +29,7 @@ __all__ = [
     "StepSpec",
     "BlockPort",
     "BlockParam",
+    "BlockResources",
     "BlockRuntime",
     "BlockSpec",
     "PluginBlocksSpec",

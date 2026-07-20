@@ -73,6 +73,11 @@ export interface BlockParam {
   options: string[]
 }
 
+export interface BlockResources {
+  minThreads: number
+  minMemoryGb: number
+}
+
 export interface BlockDef {
   name: string
   label: string
@@ -81,6 +86,8 @@ export interface BlockDef {
   pluginName: string
   pluginVersion: string
   hasRuntime: boolean
+  /** Per-instance resource requirements from the plugin YAML (null for built-ins). */
+  resources?: BlockResources | null
   inputs: BlockPort[]
   outputs: BlockPort[]
   params: BlockParam[]
