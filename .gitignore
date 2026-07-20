@@ -25,5 +25,5 @@ uploads/
 
 # Generated outputs from workflow and FastQC integration tests
 run_outputs/
-tests/fastqc/outputs/
+tests/fastqc/outputs/*
 !tests/fastqc/outputs/.gitkeep
