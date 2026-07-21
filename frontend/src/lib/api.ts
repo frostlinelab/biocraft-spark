@@ -53,6 +53,28 @@ export interface TaskRunOutputs {
   files: TaskRunOutputFile[]
 }
 
+export interface WorkspaceOutputFile {
+  name: string
+  path: string
+  size: number
+  download_url: string
+}
+
+export interface WorkspaceTask {
+  task_name: string
+  plugin: string
+  block: string
+  ordinal: number
+  input_file: string | null
+  status: string // "success" | "failed" | "skipped" | "unknown"
+  outputs: WorkspaceOutputFile[]
+}
+
+export interface WorkspaceResponse {
+  run_id: number
+  tasks: WorkspaceTask[]
+}
+
 export interface DashboardStats {
   pipelines_count: number
   task_runs_count: number
@@ -286,6 +308,17 @@ export async function fetchTaskRunOutputs(id: number): Promise<TaskRunOutputs | 
     const { status, data } = await fetchJson(base + `/api/task-runs/${id}/outputs/`)
     if (status !== 200) return null
     return data as TaskRunOutputs
+  } catch {
+    return null
+  }
+}
+
+export async function fetchTaskRunWorkspace(id: number): Promise<WorkspaceResponse | null> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + `/api/task-runs/${id}/workspace/`)
+    if (status !== 200) return null
+    return data as WorkspaceResponse
   } catch {
     return null
   }

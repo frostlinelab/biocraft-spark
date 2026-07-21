@@ -31,6 +31,7 @@ from workbench.api import (
     taskrun_list,
     taskrun_output_download,
     taskrun_outputs,
+    taskrun_workspace,
 )
 
 urlpatterns = [
@@ -63,6 +64,7 @@ urlpatterns = [
         taskrun_output_download,
         name="taskrun_output_download",
     ),
+    path("api/task-runs/<int:pk>/workspace/", taskrun_workspace, name="taskrun_workspace"),
     # SPA fallback: serve React index.html for any unmatched path
     re_path(r"^(?:.*)/?$", home),
 ]

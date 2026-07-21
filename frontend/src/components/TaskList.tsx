@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react"
 import {
   type TaskRunSummary,
   type TaskRunDetail,
-  type TaskRunOutputFile,
+  type WorkspaceTask,
   fetchTaskRuns,
   fetchTaskRun,
-  fetchTaskRunOutputs,
+  fetchTaskRunWorkspace,
   getApiBase,
 } from "../lib/api"
 import "./TaskList.css"
@@ -224,26 +224,26 @@ function DetailPanel({
   detail: TaskRunDetail | null
   loading: boolean
 }) {
-  const [outputs, setOutputs] = useState<TaskRunOutputFile[] | null>(null)
-  const [outputsLoading, setOutputsLoading] = useState(false)
+  const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null)
+  const [tasksLoading, setTasksLoading] = useState(false)
 
   const runId = detail?.id ?? null
   const succeeded = detail?.status === "succeeded"
 
-  // Fetch output files when a run has succeeded. Hooks must run before any
-  // early return, so we guard the fetch body with `succeeded` instead.
+  // Fetch per-task workspace data when a run has succeeded. Hooks must run
+  // before any early return, so we guard the fetch body with `succeeded`.
   useEffect(() => {
     if (runId == null || !succeeded) {
-      setOutputs(null)
-      setOutputsLoading(false)
+      setTasks(null)
+      setTasksLoading(false)
       return
     }
     let cancelled = false
-    setOutputsLoading(true)
-    void fetchTaskRunOutputs(runId).then((res) => {
+    setTasksLoading(true)
+    void fetchTaskRunWorkspace(runId).then((res) => {
       if (cancelled) return
-      setOutputs(res?.files ?? [])
-      setOutputsLoading(false)
+      setTasks(res?.tasks ?? [])
+      setTasksLoading(false)
     })
     return () => {
       cancelled = true
@@ -270,31 +270,16 @@ function DetailPanel({
       </div>
 
       {succeeded && (
-        <div className="bc-detail__outputs">
-          <h4 className="bc-detail__section-title">Result files</h4>
-          {outputsLoading ? (
-            <p className="bc-detail__muted">Loading files…</p>
-          ) : outputs == null ? (
-            <p className="bc-detail__muted">Failed to load files.</p>
-          ) : outputs.length === 0 ? (
-            <p className="bc-detail__muted">No output files for this run.</p>
+        <div className="bc-workspace">
+          <h4 className="bc-detail__section-title">Workspace</h4>
+          {tasksLoading ? (
+            <p className="bc-detail__muted">Loading workspace…</p>
+          ) : tasks == null ? (
+            <p className="bc-detail__muted">Failed to load workspace.</p>
+          ) : tasks.length === 0 ? (
+            <p className="bc-detail__muted">No tasks ran for this run.</p>
           ) : (
-            <ul className="bc-detail__files">
-              {outputs.map((f) => (
-                <li key={f.path} className="bc-detail__file">
-                  <a
-                    className="bc-detail__file-link"
-                    href={getApiBase() + f.download_url}
-                    download={f.name}
-                  >
-                    <span className="bc-detail__file-icon" aria-hidden>↓</span>
-                    <span className="bc-detail__file-name">{f.name}</span>
-                    <span className="bc-detail__file-size">{formatFileSize(f.size)}</span>
-                  </a>
-                  <span className="bc-detail__file-path">{f.path}</span>
-                </li>
-              ))}
-            </ul>
+            tasks.map((t) => <WorkspaceTaskCard key={t.task_name} task={t} />)
           )}
         </div>
       )}
@@ -336,6 +321,54 @@ function DetailPanel({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+const TASK_STATUS_LABEL: Record<string, string> = {
+  success: "Success",
+  failed: "Failed",
+  skipped: "Skipped",
+  unknown: "Unknown",
+}
+
+function WorkspaceTaskCard({ task }: { task: WorkspaceTask }) {
+  const label = task.block ? `${task.plugin} · ${task.block}` : task.plugin
+  return (
+    <div className="bc-workspace__task">
+      <div className="bc-workspace__task-head">
+        <span className="bc-workspace__id">{label}</span>
+        <span className="bc-workspace__ordinal">#{task.ordinal}</span>
+        <span className={`bc-workspace__status bc-workspace__status--${task.status}`}>
+          {TASK_STATUS_LABEL[task.status] ?? task.status}
+        </span>
+      </div>
+      {task.input_file && (
+        <p className="bc-workspace__input">Input: {task.input_file}</p>
+      )}
+      <div className="bc-workspace__outputs">
+        <h5 className="bc-detail__section-title">Outputs</h5>
+        {task.outputs.length === 0 ? (
+          <p className="bc-detail__muted">No output files.</p>
+        ) : (
+          <ul className="bc-detail__files">
+            {task.outputs.map((f) => (
+              <li key={f.path} className="bc-detail__file">
+                <a
+                  className="bc-detail__file-link"
+                  href={getApiBase() + f.download_url}
+                  download={f.name}
+                >
+                  <span className="bc-detail__file-icon" aria-hidden>↓</span>
+                  <span className="bc-detail__file-name">{f.name}</span>
+                  <span className="bc-detail__file-size">{formatFileSize(f.size)}</span>
+                </a>
+                <span className="bc-detail__file-path">{f.path}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

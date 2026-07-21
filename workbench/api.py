@@ -566,6 +566,100 @@ def taskrun_output_download(request, pk: int):
     )
 
 
+def _parse_task_name(name: str) -> dict:
+    """Split a task name into its components for UI display.
+
+    Task names follow one of two conventions (see resolver.py):
+      - Fan-out:  ``{plugin}__{block}__{ordinal}__{input_file}``
+      - Single:   ``{plugin}__{block}__{ordinal}``
+
+    Any unrecognised shape falls back to returning the raw name as ``plugin``
+    so the workspace view never breaks on a malformed directory entry.
+    """
+    parts = name.split("__")
+    if len(parts) == 4:
+        plugin, block, ordinal_str, input_file = parts
+        try:
+            ordinal = int(ordinal_str)
+        except ValueError:
+            ordinal = 0
+        return {
+            "plugin": plugin,
+            "block": block,
+            "ordinal": ordinal,
+            "input_file": input_file,
+        }
+    if len(parts) == 3:
+        plugin, block, ordinal_str = parts
+        try:
+            ordinal = int(ordinal_str)
+        except ValueError:
+            ordinal = 0
+        return {
+            "plugin": plugin,
+            "block": block,
+            "ordinal": ordinal,
+            "input_file": None,
+        }
+    return {"plugin": name, "block": "", "ordinal": 0, "input_file": None}
+
+
+@require_http_methods(["GET"])
+def taskrun_workspace(request, pk: int):
+    """GET /api/task-runs/<id>/workspace/ — per-task breakdown of a run.
+
+    For each task that produced output on disk, returns its parsed identity
+    (plugin/block/ordinal/input_file), status (looked up from
+    ``result_json.dag_result.tasks``), and the list of output files with
+    download URLs pointing at the existing single-file download endpoint.
+    """
+    try:
+        tr = TaskRun.objects.get(pk=pk)
+    except TaskRun.DoesNotExist:
+        return JsonResponse({"error": "TaskRun not found"}, status=404)
+
+    # Status per task name — may be missing in simulation mode or older runs.
+    result_json = tr.result_json or {}
+    dag_tasks = (
+        (result_json.get("dag_result") or {}).get("tasks") or {}
+        if isinstance(result_json, dict)
+        else {}
+    )
+
+    root = _taskrun_output_dir(pk)
+    if not root.exists():
+        return JsonResponse({"run_id": pk, "tasks": []})
+
+    tasks: list[dict] = []
+    for task_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+        task_name = task_dir.name
+        parsed = _parse_task_name(task_name)
+
+        outputs: list[dict] = []
+        for path in sorted(task_dir.rglob("*")):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(root).as_posix()
+            outputs.append({
+                "name": path.name,
+                "path": rel,
+                "size": path.stat().st_size,
+                "download_url": f"/api/task-runs/{pk}/outputs/download/?file={quote(rel)}",
+            })
+
+        tasks.append({
+            "task_name": task_name,
+            "plugin": parsed["plugin"],
+            "block": parsed["block"],
+            "ordinal": parsed["ordinal"],
+            "input_file": parsed["input_file"],
+            "status": dag_tasks.get(task_name, {}).get("status", "unknown"),
+            "outputs": outputs,
+        })
+
+    return JsonResponse({"run_id": pk, "tasks": tasks})
+
+
 # ── Dashboard stats ───────────────────────────────────────────────────────────
 
 def dashboard_stats(request):
