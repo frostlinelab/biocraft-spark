@@ -29,6 +29,8 @@ from workbench.api import (
     runtime_config,
     taskrun_detail,
     taskrun_list,
+    taskrun_output_download,
+    taskrun_outputs,
 )
 
 urlpatterns = [
@@ -55,6 +57,12 @@ urlpatterns = [
     path("api/pipelines/<str:pk>/run/", pipeline_run, name="pipeline_run"),
     path("api/task-runs/", taskrun_list, name="taskrun_list"),
     path("api/task-runs/<int:pk>/", taskrun_detail, name="taskrun_detail"),
+    path("api/task-runs/<int:pk>/outputs/", taskrun_outputs, name="taskrun_outputs"),
+    path(
+        "api/task-runs/<int:pk>/outputs/download/",
+        taskrun_output_download,
+        name="taskrun_output_download",
+    ),
     # SPA fallback: serve React index.html for any unmatched path
     re_path(r"^(?:.*)/?$", home),
 ]

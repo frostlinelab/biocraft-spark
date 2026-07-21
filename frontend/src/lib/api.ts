@@ -41,6 +41,18 @@ export interface TaskRunDetail extends TaskRunSummary {
   result_json: unknown
 }
 
+export interface TaskRunOutputFile {
+  name: string
+  path: string
+  size: number
+  download_url: string
+}
+
+export interface TaskRunOutputs {
+  run_id: number
+  files: TaskRunOutputFile[]
+}
+
 export interface DashboardStats {
   pipelines_count: number
   task_runs_count: number
@@ -263,6 +275,17 @@ export async function fetchTaskRun(id: number): Promise<TaskRunDetail | null> {
     const { status, data } = await fetchJson(base + `/api/task-runs/${id}/`)
     if (status !== 200) return null
     return data as TaskRunDetail
+  } catch {
+    return null
+  }
+}
+
+export async function fetchTaskRunOutputs(id: number): Promise<TaskRunOutputs | null> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + `/api/task-runs/${id}/outputs/`)
+    if (status !== 200) return null
+    return data as TaskRunOutputs
   } catch {
     return null
   }

@@ -6,9 +6,10 @@ import os
 import threading
 import uuid
 from pathlib import Path
+from urllib.parse import quote
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -492,6 +493,77 @@ def taskrun_detail(request, pk: int):
         "error_message": tr.error_message,
         "created_at": tr.created_at.isoformat(),
     })
+
+
+def _taskrun_output_dir(run_id: int) -> Path:
+    """Directory holding a task run's output files (mirrors _run_pipeline_bg)."""
+    return Path(settings.BASE_DIR) / "run_outputs" / f"task-run-{run_id}"
+
+
+@require_http_methods(["GET"])
+def taskrun_outputs(request, pk: int):
+    """GET /api/task-runs/<id>/outputs/ — list output files produced by a run.
+
+    Walks the run's output directory recursively and returns each regular file
+    with its relative path, byte size, and a ``download_url`` that points at
+    the single-file download endpoint.
+    """
+    try:
+        TaskRun.objects.get(pk=pk)
+    except TaskRun.DoesNotExist:
+        return JsonResponse({"error": "TaskRun not found"}, status=404)
+
+    root = _taskrun_output_dir(pk)
+    if not root.exists():
+        return JsonResponse({"run_id": pk, "files": []})
+
+    files: list[dict] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        files.append({
+            "name": path.name,
+            "path": rel,
+            "size": path.stat().st_size,
+            "download_url": f"/api/task-runs/{pk}/outputs/download/?file={quote(rel)}",
+        })
+    return JsonResponse({"run_id": pk, "files": files})
+
+
+@require_http_methods(["GET"])
+def taskrun_output_download(request, pk: int):
+    """GET /api/task-runs/<id>/outputs/download/?file=<relpath> — download one file.
+
+    Serves the file as an attachment. The ``file`` query parameter must be a
+    path relative to the run's output directory; any attempt to escape that
+    directory via ``..`` or absolute paths is rejected with HTTP 400.
+    """
+    try:
+        TaskRun.objects.get(pk=pk)
+    except TaskRun.DoesNotExist:
+        return JsonResponse({"error": "TaskRun not found"}, status=404)
+
+    rel = request.GET.get("file", "").strip()
+    if not rel:
+        return JsonResponse({"error": "file parameter is required"}, status=400)
+
+    root = _taskrun_output_dir(pk).resolve()
+    target = (root / rel).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        return JsonResponse({"error": "Invalid file path"}, status=400)
+
+    if not target.is_file():
+        return JsonResponse({"error": "File not found"}, status=404)
+
+    return FileResponse(
+        open(target, "rb"),
+        as_attachment=True,
+        filename=target.name,
+        content_type="application/octet-stream",
+    )
 
 
 # ── Dashboard stats ───────────────────────────────────────────────────────────

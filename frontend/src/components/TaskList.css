@@ -199,6 +199,93 @@
   overflow-y: auto;
 }
 
+/* ── Output files ─────────────────────────────────────────────────────────── */
+
+.bc-detail__outputs {
+  margin-bottom: 16px;
+}
+
+.bc-detail__muted {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.bc-detail__files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bc-detail__file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bc-detail__file-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  color: #d0d0d0;
+  text-decoration: none;
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.bc-detail__file-link:hover {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.06);
+  color: #f0f0f0;
+}
+
+.bc-detail__file-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bc-detail__file-link:hover .bc-detail__file-icon {
+  background: rgba(96, 165, 250, 0.25);
+}
+
+.bc-detail__file-name {
+  flex: 1;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.bc-detail__file-size {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #888;
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
+.bc-detail__file-path {
+  padding: 0 14px 4px;
+  font-size: 11px;
+  color: #666;
+  font-family: "SF Mono", "Fira Code", monospace;
+  word-break: break-all;
+}
+
 /* ── Step progress ────────────────────────────────────────── */
 
 .bc-detail__steps {

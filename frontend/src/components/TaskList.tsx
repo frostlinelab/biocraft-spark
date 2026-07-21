@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState } from "react"
 import {
   type TaskRunSummary,
   type TaskRunDetail,
+  type TaskRunOutputFile,
   fetchTaskRuns,
   fetchTaskRun,
+  fetchTaskRunOutputs,
+  getApiBase,
 } from "../lib/api"
 import "./TaskList.css"
 
@@ -43,6 +46,18 @@ function duration(start: string | null, end: string | null): string {
   const s = Math.round(ms / 1000)
   if (s < 60) return `${s}s`
   return `${Math.floor(s / 60)}m ${s % 60}s`
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const units = ["KB", "MB", "GB", "TB"]
+  let val = bytes / 1024
+  let i = 0
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024
+    i++
+  }
+  return `${val.toFixed(1)} ${units[i]}`
 }
 
 export default function TaskList() {
@@ -209,6 +224,32 @@ function DetailPanel({
   detail: TaskRunDetail | null
   loading: boolean
 }) {
+  const [outputs, setOutputs] = useState<TaskRunOutputFile[] | null>(null)
+  const [outputsLoading, setOutputsLoading] = useState(false)
+
+  const runId = detail?.id ?? null
+  const succeeded = detail?.status === "succeeded"
+
+  // Fetch output files when a run has succeeded. Hooks must run before any
+  // early return, so we guard the fetch body with `succeeded` instead.
+  useEffect(() => {
+    if (runId == null || !succeeded) {
+      setOutputs(null)
+      setOutputsLoading(false)
+      return
+    }
+    let cancelled = false
+    setOutputsLoading(true)
+    void fetchTaskRunOutputs(runId).then((res) => {
+      if (cancelled) return
+      setOutputs(res?.files ?? [])
+      setOutputsLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [runId, succeeded])
+
   if (loading) {
     return <div className="bc-detail bc-detail--loading">Loading details...</div>
   }
@@ -227,6 +268,36 @@ function DetailPanel({
         <DetailItem label="Duration" value={duration(d.started_at, d.finished_at)} />
         <DetailItem label="Created" value={formatTime(d.created_at)} />
       </div>
+
+      {succeeded && (
+        <div className="bc-detail__outputs">
+          <h4 className="bc-detail__section-title">Result files</h4>
+          {outputsLoading ? (
+            <p className="bc-detail__muted">Loading files…</p>
+          ) : outputs == null ? (
+            <p className="bc-detail__muted">Failed to load files.</p>
+          ) : outputs.length === 0 ? (
+            <p className="bc-detail__muted">No output files for this run.</p>
+          ) : (
+            <ul className="bc-detail__files">
+              {outputs.map((f) => (
+                <li key={f.path} className="bc-detail__file">
+                  <a
+                    className="bc-detail__file-link"
+                    href={getApiBase() + f.download_url}
+                    download={f.name}
+                  >
+                    <span className="bc-detail__file-icon" aria-hidden>↓</span>
+                    <span className="bc-detail__file-name">{f.name}</span>
+                    <span className="bc-detail__file-size">{formatFileSize(f.size)}</span>
+                  </a>
+                  <span className="bc-detail__file-path">{f.path}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {d.error_message && (
         <div className="bc-detail__error">
