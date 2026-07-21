@@ -32,7 +32,10 @@ const DEFAULT_NODES: Node[] = [
   {
     id: "1",
     type: "biocraftInput",
-    data: { label: "Input", blockPlugin: "builtin", blockName: "input" },
+    // `files: []` makes the initial state explicit and matches the drag-drop
+    // path. onUpdateFiles is attached at load via injectCallbacks, since
+    // callbacks can't live in a module-level constant.
+    data: { label: "Input", blockPlugin: "builtin", blockName: "input", files: [] },
     position: { x: 250, y: 50 },
   },
 ]
@@ -102,6 +105,24 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
     [setNodes],
   )
 
+  // Attach component-scoped callbacks to nodes loaded from the backend or from
+  // DEFAULT_NODES. Input nodes need onUpdateFiles; plugin nodes need onUpdateParams.
+  // These callbacks call setNodes, so they can't be serialized into the graph
+  // nor defined in a module-level constant — they must be (re)attached after
+  // every load. Without this, uploads to a freshly-created pipeline are silently
+  // dropped: InputNode calls `onUpdateFiles?.(...)`, which no-ops when undefined.
+  const injectCallbacks = useCallback(
+    (nds: Node[]): Node[] =>
+      nds.map((n) =>
+        n.type === "biocraftInput"
+          ? { ...n, data: { ...n.data, onUpdateFiles } }
+          : n.type === "biocraftPlugin"
+            ? { ...n, data: { ...n.data, onUpdateParams } }
+            : n,
+      ),
+    [onUpdateFiles, onUpdateParams],
+  )
+
   // Load pipeline data on mount or when pipelineId changes
   useEffect(() => {
     let cancelled = false
@@ -121,14 +142,9 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
         try {
           const graph = JSON.parse(p.yaml_content)
           if (graph.nodes && Array.isArray(graph.nodes)) {
-            // Inject onUpdateFiles into Input nodes after load
-            const injectedNodes = graph.nodes.map((n: Node) =>
-              n.type === "biocraftInput"
-                ? { ...n, data: { ...n.data, onUpdateFiles } }
-                : n.type === "biocraftPlugin"
-                  ? { ...n, data: { ...n.data, onUpdateParams } }
-                  : n,
-            )
+            // Inject component-scoped callbacks (onUpdateFiles / onUpdateParams)
+            // into loaded nodes — required for Input upload and Plugin param edits.
+            const injectedNodes = injectCallbacks(graph.nodes)
             setNodes(injectedNodes)
             // Track max id
             const maxId = injectedNodes.reduce((max: number, n: Node) => {
@@ -137,7 +153,7 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
             }, 0)
             nodeIdCounter.current = maxId
           } else {
-            setNodes(DEFAULT_NODES)
+            setNodes(injectCallbacks(DEFAULT_NODES))
             nodeIdCounter.current = 1
           }
           if (graph.edges && Array.isArray(graph.edges)) {
@@ -146,19 +162,19 @@ export default function WorkflowCanvas({ pipelineId, onBack, onRun }: WorkflowCa
             setEdges(DEFAULT_EDGES)
           }
         } catch {
-          setNodes(DEFAULT_NODES)
+          setNodes(injectCallbacks(DEFAULT_NODES))
           setEdges(DEFAULT_EDGES)
           nodeIdCounter.current = 1
         }
       } else {
-        setNodes(DEFAULT_NODES)
+        setNodes(injectCallbacks(DEFAULT_NODES))
         setEdges(DEFAULT_EDGES)
         nodeIdCounter.current = 1
       }
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [pipelineId, setNodes, setEdges, onUpdateFiles])
+  }, [pipelineId, setNodes, setEdges, injectCallbacks])
 
   // Debounced auto-save whenever nodes or edges change
   const doSave = useCallback(async () => {

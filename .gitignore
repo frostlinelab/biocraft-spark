@@ -20,7 +20,8 @@ package-lock.json
 .claude
 
 # Uploaded workflow files
-uploads/
+# Ignore directory contents (not the dir itself) so .gitkeep stays trackable.
+uploads/*
 !uploads/.gitkeep
 
 # Generated outputs from workflow and FastQC integration tests
