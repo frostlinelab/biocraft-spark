@@ -2,7 +2,7 @@
 
 > A local, cross-platform bioinformatics workbench for everyone — no Linux expertise required.
 
-Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-grade tools inside a desktop GUI backed by container isolation. Users define analysis pipelines as visual workflows; the runtime schedules and executes them in Docker/Podman containers, keeping data local and environments reproducible.
+Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-grade tools inside a local web GUI backed by container isolation. Users define analysis pipelines as visual workflows; the runtime schedules and executes them in Docker/Podman containers, keeping data local and environments reproducible.
 
 **Status:** Phase 1 (Core Runtime) ✅ complete — Phase 2 (UI & Pipeline) 🔄 in progress.
 
@@ -32,7 +32,7 @@ Biocraft-Spark is built around three ideas:
 2. **Container-isolated** — every tool runs inside a Docker/Podman container, eliminating dependency conflicts.
 3. **Visual workflow editor** — pipelines are built with a drag-and-drop node editor backed by React Flow, making it easy to compose and reconfigure analysis steps without writing code.
 
-The desktop GUI (Tauri + React) talks to a Django backend over `localhost:8000`. The backend owns the execution engine: a DAG scheduler that topologically sorts pipeline steps and runs independent steps in parallel waves.
+The web frontend (React + Vite) talks to the Django backend over HTTP. In production Django serves the built SPA bundle directly, so API calls and page loads share the same origin.
 
 ---
 
@@ -40,8 +40,8 @@ The desktop GUI (Tauri + React) talks to a Django backend over `localhost:8000`.
 
 ```
 ┌─────────────────────────────────────────────┐
-│          Desktop Frontend (Tauri + React)   │
-│          Communicates via HTTP localhost    │
+│          Web Frontend (React + Vite)        │
+│          Served by Django · same-origin API │
 └──────────────────┬──────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────┐
@@ -74,7 +74,7 @@ The backend container mounts the host Docker socket (`/var/run/docker.sock`) so 
 
 | Layer | Technology |
 |---|---|
-| Desktop frontend | Tauri 2.11 · React 19 · TypeScript 6 · Vite 8 |
+| Web frontend | React 19 · TypeScript 6 · Vite 8 |
 | Workflow editor | @xyflow/react (React Flow) 12.x — drag-and-drop node editor |
 | Backend framework | Django 6.0.4 · Python |
 | Container runtime | Docker ≥ 7.0 (docker-py SDK) |
@@ -89,8 +89,7 @@ The backend container mounts the host Docker socket (`/var/run/docker.sock`) so 
 
 - **Docker** (Desktop, Engine, or OrbStack) running on the host
 - **Python 3.12+** (for running outside Docker)
-- **Node.js 20+** and **Rust** (for building the desktop frontend)
-- **Tauri CLI** — installed automatically via `npm install` inside `frontend/`
+- **Node.js 20+** (for building the frontend)
 
 ---
 
@@ -104,7 +103,7 @@ docker compose build --no-cache web
 docker compose up
 ```
 
-The Django server starts at `http://127.0.0.1:8000`. The Docker socket is mounted automatically so the runtime can execute containers.
+The Django server starts at `http://127.0.0.1:25568`. The Docker socket is mounted automatically so the runtime can execute containers.
 
 ### 2. Backend (local venv — alternative)
 
@@ -116,19 +115,29 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-### 3. Desktop Frontend (development mode)
+### 3. Frontend (build or development)
+
+The frontend is a Vite + React SPA. Django serves the built bundle from
+`frontend/dist/` as static files, so for normal use you only need to build it:
 
 ```bash
 cd frontend
 npm install
-
-# Run the Tauri dev window (spawns the React dev server + native window)
-npm run tauri dev
+npm run build      # type-check + vite build → dist/
 ```
 
-The Tauri window connects to the Django backend at `127.0.0.1:8000`. Start the backend first.
+After building, the app is available at `http://127.0.0.1:25568/` (served by
+Django). Re-run `npm run build` after frontend changes.
 
-> **Tip:** The `frontend/` folder also has its own [README](frontend/README.md) with Tauri-specific notes.
+For hot-reload development, run the Vite dev server separately and point it at
+the Django backend:
+
+```bash
+cd frontend
+VITE_BIOCRAFT_API_BASE=http://localhost:25568 npm run dev
+```
+
+> **Tip:** The `frontend/` folder has its own [README](frontend/README.md) with frontend-specific notes.
 
 ---
 
@@ -144,11 +153,11 @@ biocraft-spark/
 ├── biocraft_spark/         # Django project config (settings, urls, wsgi/asgi)
 ├── workbench/              # Django app — views, models, API, middleware
 ├── templates/              # Django HTML templates
-├── frontend/               # Tauri 2 + Vite + React desktop app
+├── frontend/               # Vite + React web app (built to dist/, served by Django)
 │   ├── src/                # React components
 │   │   ├── components/     # AppLayout, Sidebar, Dashboard, WorkflowCanvas, ...
 │   │   └── lib/            # API client
-│   └── src-tauri/          # Rust Tauri shell
+│   └── dist/               # Built bundle (gitignored, served as /static/)
 ├── docs/                   # Troubleshooting guide
 ├── CONTRIBUTING.md         # Plugin development guide
 ├── docker-compose.yml
@@ -232,7 +241,7 @@ REST API for the workflow frontend:
 | Phase | Scope | Status |
 |---|---|---|
 | **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
-| **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Tauri desktop integration · Multi-workflow management · Task run tracking | 🔄 In progress |
+| **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Web SPA frontend · Multi-workflow management · Task run tracking | 🔄 In progress |
 | **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC ✅, Prokka, Roary, …) · Plugin marketplace | 🔄 In progress |
 | **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
 

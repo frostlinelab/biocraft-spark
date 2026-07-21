@@ -1,57 +1,45 @@
-# Biocraft Spark — Frontend (Tauri Desktop)
+# Biocraft Spark — Frontend (Web)
 
-React 19 + Vite 8 + Tauri 2 desktop app. The Tauri shell spawns the Django
-backend automatically as a sidecar — you do **not** need Docker for local dev.
+React 19 + Vite 8 single-page app. The production bundle is built to `dist/`
+and served by the Django backend as static files, so the API and the SPA share
+the same origin.
 
 ## Prerequisites
 
-- Node.js + npm
-- Rust toolchain (`rustc`, `cargo`)
-- Python virtualenv at the repo root (`../.venv`) with backend deps installed:
-  ```bash
-  cd ..
-  python -m venv .venv && source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
-- A running Docker engine (e.g. OrbStack) — only needed for the executor /
-  docker features inside the app, not to start the backend.
+- Node.js 20+ and npm
+- A running Django backend (see the root `docker-compose.yml` or
+  `python manage.py runserver`). The backend serves the built SPA and provides
+  the REST API consumed by `src/lib/api.ts`.
 
-## Run (development)
+## Build (production)
 
 ```bash
 cd frontend
 npm install
-npm run tauri dev
+npm run build      # tsc -b + vite build → dist/
 ```
 
-This launches Vite on http://localhost:5173 and opens the native window.
-On startup the Rust shell (`src-tauri/src/lib.rs`) spawns the Django backend:
+Django serves `dist/index.html` at `/` and the asset bundle under
+`/static/`. With the Docker backend running, the app is available at
+`http://127.0.0.1:25568/`. Re-run `npm run build` after frontend changes.
 
-```
-../.venv/bin/python ../manage.py runserver 127.0.0.1:8000 --noreload
-```
-
-Because the sidecar uses `--noreload`, **changes to Python backend code require
-restarting the app** (close the window and re-run `npm run tauri dev`).
-
-The first `tauri dev` compiles ~350 Rust crates and can take several minutes.
-
-## Build
+## Development (hot-reload)
 
 ```bash
-npm run build          # type-check + vite build -> dist/
-npm run tauri build    # bundle the desktop installer
+cd frontend
+npm install
+VITE_BIOCRAFT_API_BASE=http://localhost:25568 npm run dev
 ```
 
-## Web-only preview (no desktop shell)
-
-```bash
-npm run dev            # vite on http://localhost:5173
-```
+Vite serves the SPA on `http://localhost:5173` with HMR. The
+`VITE_BIOCRAFT_API_BASE` env var tells the API client where the Django backend
+lives; without it the client assumes same-origin (which only holds when Django
+serves the built bundle).
 
 ## Notes
 
-- The root `docker-compose.yml` is an alternative way to run Django in a
-  container (port 8000). Don't run it at the same time as the Tauri sidecar —
-  they both bind 8000. Rebuild with `docker compose up --build` after changing
-  `requirements.txt`.
+- `getApiBase()` in `src/lib/api.ts` returns `VITE_BIOCRAFT_API_BASE` with
+  trailing slashes stripped, or `""` (same-origin) when unset.
+- Vite is configured with `base: '/static/'` so the built `index.html` emits
+  asset URLs under `/static/...`, matching Django's `STATIC_URL = 'static/'`.
+- The root `docker-compose.yml` runs Django in a container on port `25568`.
