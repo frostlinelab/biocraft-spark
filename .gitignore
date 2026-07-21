@@ -1,6 +1,7 @@
 .idea
 .vscode/
 .venv
+.trae
 .DS_Store
 *.sqlite3
 __pycache__/
