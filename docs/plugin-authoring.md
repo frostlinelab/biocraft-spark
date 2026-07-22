@@ -271,9 +271,9 @@ BIOCRAFT_RUNTIME = {
 
 ## 完整示例
 
-### 示例 1：FastQC（单积木插件，官方首个插件）
+### 示例 1：FastQC（单积木插件，Marketplace 首发插件）
 
-> 仓库内正式文件：[`plugins/fastqc.plugin.yaml`](../plugins/fastqc.plugin.yaml)
+> Marketplace 中的正式文件：见 [biocraft-marketplace](https://github.com/frostlinelab/biocraft-marketplace) 仓库
 
 ```yaml
 name: fastqc

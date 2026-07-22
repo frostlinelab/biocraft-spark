@@ -173,7 +173,7 @@ biocraft-spark/
 
 Plugins are YAML files that define one or more **blocks** (draggable workflow nodes). Each block declares its container runtime, typed input/output ports, and configurable parameters. Biocraft automatically discovers plugins in the `plugins/` directory and surfaces them as categorized blocks in the workflow editor.
 
-**First official plugin:** [`plugins/fastqc.plugin.yaml`](plugins/fastqc.plugin.yaml) — FastQC quality control for sequencing reads.
+**Example plugin (FastQC):** installable from the Marketplace — FastQC quality control for sequencing reads.
 
 ```yaml
 name: fastqc
@@ -212,7 +212,7 @@ Biocraft-Spark ships with a built-in **Marketplace** for browsing, installing, a
 
 - **Browse** the catalog from the sidebar's Marketplace view: each plugin shows its version, author, description, and a ✨ **Beautiful Creatures** badge when it has been curated.
 - **Install** a plugin with one click — the backend downloads the manifest, verifies its SHA-256, validates it against the plugin schema, writes it to `plugins/`, and records it. The new block appears in the workflow editor after a page refresh.
-- **Uninstall** marketplace-installed plugins at any time. Plugins shipped with Biocraft-Spark (like FastQC) are protected and cannot be removed.
+- **Uninstall** marketplace-installed plugins at any time. Biocraft-Spark ships with no built-in bioinformatics tools — every plugin is user-installed and removable.
 
 The registry lives in a separate public repository, [**biocraft-marketplace**](https://github.com/frostlinelab/biocraft-marketplace), statically hosted on Cloudflare Pages. **Curation equals certification**: a plugin enters the registry only after its code has been reviewed, and those promoted to the *Beautiful Creatures* selection are listed in the registry's `beautiful-creatures.txt` allowlist.
 
@@ -260,7 +260,7 @@ REST API for the workflow frontend:
 |---|---|---|
 | **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
 | **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Web SPA frontend · Multi-workflow management · Task run tracking | 🔄 In progress |
-| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC ✅, Prokka, Roary, …) · Plugin marketplace ✅ | 🔄 In progress |
+| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC, Prokka, Roary, … — all via Marketplace) ✅ · Plugin marketplace ✅ | 🔄 In progress |
 | **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
 
 ---
