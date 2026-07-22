@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -103,10 +104,20 @@ class SchedulerPingTests(TestCase):
 
 
 class FastQCPluginTests(TestCase):
-    """First official plugin: plugins/fastqc.plugin.yaml."""
+    """Plugin discovery + DAG resolution, demonstrated via the FastQC fixture."""
+
+    FASTQC_FIXTURE = Path(settings.BASE_DIR) / "tests" / "fixtures" / "fastqc.plugin.yaml"
 
     def setUp(self):
-        self.plugins_dir = Path(settings.BIOCRAFT_PLUGINS_DIR)
+        self.tmp = tempfile.TemporaryDirectory()
+        self._override = override_settings(BIOCRAFT_PLUGINS_DIR=Path(self.tmp.name))
+        self._override.enable()
+        shutil.copy(self.FASTQC_FIXTURE, Path(self.tmp.name) / "fastqc.plugin.yaml")
+        self.plugins_dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self._override.disable()
+        self.tmp.cleanup()
 
     def test_discover_fastqc_plugin(self):
         plugins = discover_plugins(self.plugins_dir)
@@ -280,6 +291,15 @@ class MarketplaceCatalogTests(TestCase):
 
     def setUp(self):
         _reset_index_cache()
+        # Isolate from local dev state (manually-installed plugins on disk / in DB).
+        self.tmp = tempfile.TemporaryDirectory()
+        self._override = override_settings(BIOCRAFT_PLUGINS_DIR=Path(self.tmp.name))
+        self._override.enable()
+
+    def tearDown(self):
+        self._override.disable()
+        self.tmp.cleanup()
+        InstalledPlugin.objects.all().delete()
 
     @patch("workbench.api._fetch_marketplace_index")
     def test_catalog_enriches_installed_status(self, mock_index):
@@ -309,18 +329,29 @@ class MarketplaceCatalogTests(TestCase):
             ],
         }
 
+        # Neither plugin is installed yet → both null / not managed.
         response = self.client.get(reverse("marketplace_catalog"))
         self.assertEqual(response.status_code, 200)
         plugins = {p["name"]: p for p in response.json()["plugins"]}
 
-        # fastqc ships on disk → installed, but no InstalledPlugin row → not managed
-        self.assertEqual(plugins["fastqc"]["installed_version"], "1.0.0")
+        self.assertIsNone(plugins["fastqc"]["installed_version"])
         self.assertFalse(plugins["fastqc"]["managed"])
         self.assertTrue(plugins["fastqc"]["curated"])
 
-        # prokka is neither on disk nor managed → not installed
         self.assertIsNone(plugins["prokka"]["installed_version"])
         self.assertFalse(plugins["prokka"]["managed"])
+
+        # After recording a marketplace install (InstalledPlugin row), prokka shows
+        # as installed + managed (uninstallable).
+        InstalledPlugin.objects.create(
+            name="prokka",
+            version="2.0.0",
+            source_url="https://example/plugins/prokka.plugin.yaml",
+        )
+        response = self.client.get(reverse("marketplace_catalog"))
+        plugins = {p["name"]: p for p in response.json()["plugins"]}
+        self.assertEqual(plugins["prokka"]["installed_version"], "2.0.0")
+        self.assertTrue(plugins["prokka"]["managed"])
 
     @patch("workbench.api._fetch_marketplace_index")
     def test_catalog_returns_502_when_registry_unreachable(self, mock_index):
@@ -416,8 +447,8 @@ class MarketplaceInstallTests(TestCase):
         self.assertFalse(InstalledPlugin.objects.filter(name="testplugin").exists())
         self.assertFalse((Path(self.tmp.name) / "testplugin.plugin.yaml").exists())
 
-    def test_uninstall_protects_shipped_default(self):
-        # fastqc has no InstalledPlugin row → 404, even though it ships on disk.
+    def test_uninstall_rejects_unmanaged_plugin(self):
+        # fastqc has no InstalledPlugin row → 404 (not installed via marketplace).
         response = self.client.delete(
             reverse("marketplace_uninstall", kwargs={"name": "fastqc"})
         )

@@ -1,6 +1,5 @@
-# Official plugin: FastQC
-# First-party example of a single-block Biocraft plugin.
-# Docs: docs/plugin-authoring.md
+# Test fixture: FastQC plugin YAML used by unit + integration tests.
+# Mirrors the manifest published in the biocraft-marketplace registry.
 
 name: fastqc
 version: "1.0.0"

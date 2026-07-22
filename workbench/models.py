@@ -62,8 +62,8 @@ class InstalledPlugin(models.Model):
     """A plugin installed from the remote marketplace registry.
 
     Tracks marketplace-installed plugins so the UI can show install state and
-    support updates/uninstall. Plugins shipped in the repo (e.g. fastqc) live
-    on disk but have no row here — they are ``managed=False`` (not uninstallable).
+    support updates/uninstall. Only plugins with a row here are ``managed=True``
+    (uninstallable); plugins not yet installed have no row.
     """
 
     name = models.CharField(max_length=255, unique=True)

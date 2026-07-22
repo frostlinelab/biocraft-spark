@@ -435,7 +435,7 @@ export interface MarketplacePlugin {
   curated: boolean
   yaml_url: string
   sha256: string
-  /** Version present on disk (shipped default or installed), or null if not installed. */
+  /** Version present on disk (marketplace-installed), or null if not installed. */
   installed_version: string | null
   /** True only if installed via marketplace (has a DB row) — uninstallable. */
   managed: boolean

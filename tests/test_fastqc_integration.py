@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 from pathlib import Path
 from unittest import skipUnless
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from biocraft_core.plugin import get_all_block_specs, resolve_graph_to_task_nodes
 from biocraft_core.runtime.executor import DockerContainerExecutor
@@ -33,10 +34,21 @@ class FastQCIntegrationTests(SimpleTestCase):
         shutil.rmtree(self.output_dir, ignore_errors=True)
         self.output_dir.mkdir(parents=True)
 
+        # Isolate the plugins dir so the test does not depend on the real plugins/.
+        self.plugins_tmp = tempfile.TemporaryDirectory()
+        self._override = override_settings(BIOCRAFT_PLUGINS_DIR=Path(self.plugins_tmp.name))
+        self._override.enable()
+        shutil.copy(
+            Path(settings.BASE_DIR) / "tests" / "fixtures" / "fastqc.plugin.yaml",
+            Path(self.plugins_tmp.name) / "fastqc.plugin.yaml",
+        )
+
     def tearDown(self):
         shutil.rmtree(self.output_dir, ignore_errors=True)
         self.output_dir.mkdir(parents=True)
         (self.output_dir / ".gitkeep").touch()
+        self._override.disable()
+        self.plugins_tmp.cleanup()
 
     def test_fastqc_processes_real_fixture_with_isolated_mounts(self):
         graph = {

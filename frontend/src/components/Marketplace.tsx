@@ -227,7 +227,7 @@ function PluginCard({
         )}
         {installed && !updatable && (
           <span className="bc-market__installed">
-            ✓ Installed{!managed ? " (built-in)" : ""}
+            ✓ Installed
           </span>
         )}
         {installed && updatable && (

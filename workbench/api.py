@@ -744,9 +744,9 @@ def marketplace_catalog(request):
     """GET /api/marketplace/catalog/ — remote plugin catalog, enriched with local install state.
 
     Each plugin from the registry is annotated with:
-      - ``installed_version``: version on disk (shipped default or marketplace-installed), else null
+      - ``installed_version``: version on disk (marketplace-installed), else null
       - ``managed``: True only if installed via marketplace (has an InstalledPlugin row);
-        shipped defaults are installed but not managed (not uninstallable).
+        plugins not yet installed are not managed.
     """
     index = _fetch_marketplace_index()
     if index is None:
@@ -865,7 +865,7 @@ def marketplace_uninstall(request, name: str):
     """DELETE /api/marketplace/plugins/<name>/ — remove a marketplace-installed plugin.
 
     Only plugins with an InstalledPlugin row (i.e. installed via the marketplace)
-    can be uninstalled. Shipped defaults like fastqc are protected (404).
+    can be uninstalled. Plugins without a row (not installed) return 404.
     """
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
         return JsonResponse({"error": "Invalid plugin name"}, status=400)

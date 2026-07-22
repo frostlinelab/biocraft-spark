@@ -25,6 +25,10 @@ package-lock.json
 uploads/*
 !uploads/.gitkeep
 
+# User-installed plugins via Marketplace (local runtime state, not source)
+plugins/*
+!plugins/.gitkeep
+
 # Generated outputs from workflow and FastQC integration tests
 run_outputs/
 tests/fastqc/outputs/*
