@@ -29,3 +29,6 @@ uploads/*
 run_outputs/
 tests/fastqc/outputs/*
 !tests/fastqc/outputs/.gitkeep
+
+# Local convenience scripts (personal launcher, not part of the project)
+run.sh
