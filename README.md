@@ -17,6 +17,7 @@ Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-gra
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
 - [Plugin Format](#plugin-format)
+- [Marketplace](#marketplace)
 - [Debug Endpoints](#debug-endpoints)
 - [API Endpoints](#api-endpoints)
 - [Roadmap](#roadmap)
@@ -205,6 +206,20 @@ blocks:
 
 ---
 
+## Marketplace
+
+Biocraft-Spark ships with a built-in **Marketplace** for browsing, installing, and uninstalling community plugins from a remote registry — no manual YAML copying required.
+
+- **Browse** the catalog from the sidebar's Marketplace view: each plugin shows its version, author, description, and a ✨ **Beautiful Creatures** badge when it has been curated.
+- **Install** a plugin with one click — the backend downloads the manifest, verifies its SHA-256, validates it against the plugin schema, writes it to `plugins/`, and records it. The new block appears in the workflow editor after a page refresh.
+- **Uninstall** marketplace-installed plugins at any time. Plugins shipped with Biocraft-Spark (like FastQC) are protected and cannot be removed.
+
+The registry lives in a separate public repository, [**biocraft-marketplace**](https://github.com/frostlinelab/biocraft-marketplace), statically hosted on Cloudflare Pages. **Curation equals certification**: a plugin enters the registry only after its code has been reviewed, and those promoted to the *Beautiful Creatures* selection are listed in the registry's `beautiful-creatures.txt` allowlist.
+
+The backend proxies and caches the remote `index.json` (5-minute TTL) and enriches each entry with local install state. Override the registry URL with the `BIOCRAFT_MARKETPLACE_INDEX_URL` environment variable. See [API Endpoints](#api-endpoints) for the marketplace API.
+
+---
+
 ## Debug Endpoints
 
 These endpoints are available in development to verify each runtime layer independently:
@@ -233,6 +248,9 @@ REST API for the workflow frontend:
 | `POST` | `/api/pipelines/<id>/run/` | Execute a pipeline (creates a TaskRun) |
 | `GET` | `/api/task-runs/` | List task runs (optional `?pipeline_id=` filter) |
 | `GET` | `/api/task-runs/<id>/` | Get a single task run with results |
+| `GET` | `/api/marketplace/catalog/` | Fetch the enriched plugin catalog (remote index + local install state) |
+| `POST` | `/api/marketplace/install/` | Install a plugin from a `yaml_url` (downloads, verifies, validates, persists) |
+| `DELETE` | `/api/marketplace/plugins/<name>/` | Uninstall a marketplace-installed plugin |
 
 ---
 
@@ -242,7 +260,7 @@ REST API for the workflow frontend:
 |---|---|---|
 | **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
 | **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Web SPA frontend · Multi-workflow management · Task run tracking | 🔄 In progress |
-| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC ✅, Prokka, Roary, …) · Plugin marketplace | 🔄 In progress |
+| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC ✅, Prokka, Roary, …) · Plugin marketplace ✅ | 🔄 In progress |
 | **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
 
 ---
