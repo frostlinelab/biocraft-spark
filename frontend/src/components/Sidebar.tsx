@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import logoUrl from "../assets/logo.png"
 import "./Sidebar.css"
 
 export type NavView = "dashboard" | "workflows" | "tasks" | "health" | "n8n" | "marketplace"
@@ -119,7 +120,7 @@ export default function Sidebar({ active, onChange, items = DEFAULT_ITEMS }: Sid
   return (
     <aside className="bc-sidebar">
       <div className="bc-sidebar__brand">
-        <div className="bc-sidebar__logo">BS</div>
+        <img className="bc-sidebar__logo" src={logoUrl} alt="Biocraft Spark" />
         <span className="bc-sidebar__name">Biocraft Spark</span>
       </div>
 
