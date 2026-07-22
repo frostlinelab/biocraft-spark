@@ -1,0 +1,226 @@
+/* ── Marketplace ─────────────────────────────────────────────────────────────── */
+
+.bc-market {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+  position: relative;
+}
+
+.bc-market__head {
+  margin-bottom: 24px;
+}
+
+.bc-market__title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.bc-market__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+  line-height: 1.5;
+}
+
+/* Filter tabs */
+.bc-market__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.bc-market__filter {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.bc-market__filter:hover {
+  color: #c0c0c0;
+}
+
+.bc-market__filter--active {
+  color: #ececec;
+  border-bottom-color: #5e9fe8;
+}
+
+/* Card grid */
+.bc-market__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.bc-market__card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
+}
+
+.bc-market__card:hover {
+  border-color: #3a3a3a;
+}
+
+.bc-market__card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bc-market__icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bc-market__card-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bc-market__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ececec;
+  word-break: break-all;
+}
+
+.bc-market__version {
+  font-size: 11px;
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  color: #888;
+}
+
+.bc-market__badge {
+  flex-shrink: 0;
+  font-size: 14px;
+  cursor: help;
+}
+
+.bc-market__desc {
+  margin: 0;
+  font-size: 13px;
+  color: #b0b0b0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.bc-market__author {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.bc-market__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.bc-market__btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.bc-market__btn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.bc-market__btn--primary {
+  background: #5e9fe8;
+  color: #0e1a26;
+}
+
+.bc-market__btn--primary:hover:not(:disabled) {
+  background: #6faaec;
+}
+
+.bc-market__btn--danger {
+  background: transparent;
+  color: #e97366;
+  border-color: rgba(233, 115, 102, 0.4);
+}
+
+.bc-market__btn--danger:hover:not(:disabled) {
+  background: rgba(233, 115, 102, 0.12);
+}
+
+.bc-market__installed {
+  font-size: 12px;
+  font-weight: 600;
+  color: #72bc8f;
+}
+
+/* States */
+.bc-market__muted {
+  color: #888;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+.bc-market__error {
+  color: #e97366;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+.bc-market__hint {
+  margin-top: 28px;
+  font-size: 12px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Toast */
+.bc-market__toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  max-width: 360px;
+}
+
+.bc-market__toast--ok {
+  background: rgba(114, 188, 143, 0.16);
+  color: #9fd8b3;
+  border: 1px solid rgba(114, 188, 143, 0.35);
+}
+
+.bc-market__toast--err {
+  background: rgba(233, 115, 102, 0.16);
+  color: #f0a59b;
+  border: 1px solid rgba(233, 115, 102, 0.35);
+}

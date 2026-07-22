@@ -47,7 +47,6 @@ const DEFAULT_ITEMS: NavItem[] = [
     key: "marketplace",
     label: "Marketplace",
     icon: <MarketplaceIcon />,
-    disabled: true,
   },
 ]
 

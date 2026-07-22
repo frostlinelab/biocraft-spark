@@ -424,6 +424,75 @@ export async function fetchBlocks(): Promise<BlockCategory[]> {
   }
 }
 
+// ── Marketplace ───────────────────────────────────────────────────────────────
+
+export interface MarketplacePlugin {
+  name: string
+  version: string
+  description: string
+  icon: string
+  author: string
+  curated: boolean
+  yaml_url: string
+  sha256: string
+  /** Version present on disk (shipped default or installed), or null if not installed. */
+  installed_version: string | null
+  /** True only if installed via marketplace (has a DB row) — uninstallable. */
+  managed: boolean
+}
+
+export interface MarketplaceCatalog {
+  schema_version: number
+  generated_at: string
+  plugins: MarketplacePlugin[]
+}
+
+export async function fetchMarketplaceCatalog(): Promise<MarketplaceCatalog | null> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + "/api/marketplace/catalog/")
+    if (status !== 200) return null
+    return data as MarketplaceCatalog
+  } catch {
+    return null
+  }
+}
+
+export async function installPlugin(body: {
+  yaml_url: string
+  sha256?: string
+  author?: string
+  curated?: boolean
+}): Promise<{ ok: boolean; error?: string }> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(base + "/api/marketplace/install/", {
+      method: "POST",
+      body,
+    })
+    if (status === 201) return { ok: true }
+    const errMsg = (data as { error?: string } | null)?.error ?? "Install failed"
+    return { ok: false, error: errMsg }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
+export async function uninstallPlugin(name: string): Promise<{ ok: boolean; error?: string }> {
+  const base = getApiBase()
+  try {
+    const { status, data } = await fetchJson(
+      base + `/api/marketplace/plugins/${encodeURIComponent(name)}/`,
+      { method: "DELETE" },
+    )
+    if (status === 200) return { ok: true }
+    const errMsg = (data as { error?: string } | null)?.error ?? "Uninstall failed"
+    return { ok: false, error: errMsg }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 // ── File upload ──────────────────────────────────────────────────────────────
 
 export interface UploadedFile {
