@@ -1,0 +1,15 @@
+# Development overrides — mount full source for backend live-reload.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   ./install.sh --dev
+#
+# With .:/app mounted, Django's runserver auto-reloads on Python changes.
+# For frontend hot-reload, run the Vite dev server separately:
+#   cd frontend && npm install && npm run dev
+services:
+  web:
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: python manage.py runserver 0.0.0.0:25568

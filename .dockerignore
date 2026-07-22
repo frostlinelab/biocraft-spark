@@ -1,11 +1,46 @@
+# Python
 .venv
 __pycache__
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 .Python
-db.sqlite3
+
+# Database (runtime state, bind-mounted)
+*.sqlite3
+
+# Environment
 .env
+
+# Git
 .git
 .gitignore
+.github
+
+# OS
 .DS_Store
+
+# Node (installed fresh in the frontend build stage)
+node_modules
+frontend/node_modules
+frontend/dist
+
+# IDE / tools
+.claude
+.trae
+.idea
+.vscode
+
+# Runtime data (bind-mounted at runtime, not needed in image)
+run_outputs
+uploads/*
+!uploads/.gitkeep
+plugins/*
+!plugins/.gitkeep
+
+# Docs and tests (not needed in production image)
+docs
+tests
+
+# Local scripts and dev config (not needed in image)
+run.sh
+install.sh
+docker-compose.dev.yml

@@ -89,54 +89,74 @@ The backend container mounts the host Docker socket (`/var/run/docker.sock`) so 
 ## Prerequisites
 
 - **Docker** (Desktop, Engine, or OrbStack) running on the host
-- **Python 3.12+** (for running outside Docker)
-- **Node.js 20+** (for building the frontend)
+
+> No Python or Node.js required — the Docker image is self-contained.
+> Python 3.12+ and Node.js 20+ are only needed for development outside Docker.
 
 ---
 
 ## Getting Started
 
-### 1. Backend (Docker Compose — recommended)
+### Quick Start (recommended)
 
 ```bash
-# Build and start the Django backend
-docker compose build --no-cache web
-docker compose up
+./install.sh
 ```
 
-The Django server starts at `http://127.0.0.1:25568`. The Docker socket is mounted automatically so the runtime can execute containers.
+Pulls the pre-built image from GHCR and starts the server at `http://127.0.0.1:25568`. The Docker socket is mounted automatically so the runtime can execute workflow containers.
 
-### 2. Backend (local venv — alternative)
+### Build from source
 
 ```bash
+./install.sh --build
+```
+
+Builds the Docker image locally — the multi-stage Dockerfile compiles the frontend inside Docker, so **no host Node.js or Python is required**.
+
+### Development mode
+
+For live backend reload and frontend hot-reload:
+
+```bash
+# Terminal 1 — backend (Django with live reload)
+./install.sh --dev
+
+# Terminal 2 — frontend (Vite dev server)
+cd frontend
+npm install
+VITE_BIOCRAFT_API_BASE=http://localhost:25568 npm run dev
+```
+
+### Other commands
+
+```bash
+./install.sh stop       # Stop the server
+./install.sh restart    # Restart the server
+./install.sh logs       # Tail logs (Ctrl+C to exit)
+./install.sh status     # Show container status
+./install.sh --help     # Show all options
+```
+
+### Manual setup (advanced, without Docker)
+
+<details>
+<summary>Local venv + manual frontend build</summary>
+
+```bash
+# Backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
-```
 
-### 3. Frontend (build or development)
-
-The frontend is a Vite + React SPA. Django serves the built bundle from
-`frontend/dist/` as static files, so for normal use you only need to build it:
-
-```bash
+# Frontend (build to dist/, served by Django)
 cd frontend
 npm install
 npm run build      # type-check + vite build → dist/
 ```
 
-After building, the app is available at `http://127.0.0.1:25568/` (served by
-Django). Re-run `npm run build` after frontend changes.
-
-For hot-reload development, run the Vite dev server separately and point it at
-the Django backend:
-
-```bash
-cd frontend
-VITE_BIOCRAFT_API_BASE=http://localhost:25568 npm run dev
-```
+</details>
 
 > **Tip:** The `frontend/` folder has its own [README](frontend/README.md) with frontend-specific notes.
 

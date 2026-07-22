@@ -1,12 +1,20 @@
 services:
   web:
+    # Pre-built image from GHCR (pulled by default).
+    # Falls back to `build: .` when the image is not available or `--build` is used.
+    image: ghcr.io/frostlinelab/biocraft-spark:latest
     build: .
     container_name: biocraft-spark-web
     ports:
       - "25568:25568"
     volumes:
-      - .:/app
+      # Docker socket — lets the runtime spawn sibling containers (Docker-out-of-Docker)
       - /var/run/docker.sock:/var/run/docker.sock
+      # Persistent data (selective bind mounts — image code/frontend stays self-contained)
+      - ./uploads:/app/uploads
+      - ./plugins:/app/plugins
+      - ./run_outputs:/app/run_outputs
+      - ./db.sqlite3:/app/db.sqlite3
     environment:
       DOCKER_HOST: unix:///var/run/docker.sock
       # Docker bind mounts are resolved by the host daemon, not this container.
