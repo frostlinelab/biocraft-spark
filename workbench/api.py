@@ -707,6 +707,10 @@ def dashboard_stats(request):
 # hitting Cloudflare on every catalog request; tests reset this directly.
 _INDEX_CACHE: dict = {"fetched_at": 0.0, "data": None}
 
+# Cloudflare bot protection (Error 1010) blocks the default Python-urllib
+# User-Agent, so every registry request sends an identifying UA.
+_MARKETPLACE_UA = "biocraft-spark/1.0 (+https://github.com/frostlinelab/biocraft-spark)"
+
 
 def _fetch_marketplace_index() -> dict | None:
     """Fetch the remote marketplace index.json with a simple TTL cache.
@@ -723,7 +727,7 @@ def _fetch_marketplace_index() -> dict | None:
     if not url:
         return None
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": _MARKETPLACE_UA})
         with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 — trusted configured URL
             data = json.loads(resp.read().decode("utf-8"))
     except Exception:
@@ -799,7 +803,7 @@ def marketplace_install(request):
 
     # Download the plugin manifest
     try:
-        req = urllib.request.Request(yaml_url, headers={"Accept": "text/yaml"})
+        req = urllib.request.Request(yaml_url, headers={"Accept": "text/yaml", "User-Agent": _MARKETPLACE_UA})
         with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
             content = resp.read()
     except Exception:
