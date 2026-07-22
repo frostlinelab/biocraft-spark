@@ -1,8 +1,14 @@
 # Biocraft-Spark
 
+<p align="center">
+  <img src="docs/assets/biocraft-spark-logo.jpg" width="200" alt="Biocraft-Spark Logo" />
+</p>
+
 > A local, cross-platform bioinformatics workbench for everyone — no Linux expertise required.
 
 Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-grade tools inside a local web GUI backed by container isolation. Users define analysis pipelines as visual workflows; the runtime schedules and executes them in Docker/Podman containers, keeping data local and environments reproducible.
+
+![Biocraft-Spark Dashboard](docs/assets/screenshot.png)
 
 **Status:** Phase 1 (Core Runtime) ✅ complete — Phase 2 (UI & Pipeline) 🔄 in progress.
 
