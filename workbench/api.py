@@ -2,8 +2,13 @@
 
 import hashlib
 import json
+import logging
 import os
+import re
+import tempfile
 import threading
+import time
+import urllib.request
 import uuid
 from pathlib import Path
 from urllib.parse import quote
@@ -13,9 +18,19 @@ from django.http import FileResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Pipeline, TaskRun
+from .models import InstalledPlugin, Pipeline, TaskRun
 
-from biocraft_core.plugin import builtin_blocks, discover_plugins, BlockParam, BlockPort, BlockSpec, PluginBlocksSpec
+from biocraft_core.plugin import (
+    builtin_blocks,
+    discover_plugins,
+    load_plugin_file,
+    BlockParam,
+    BlockPort,
+    BlockSpec,
+    PluginBlocksSpec,
+)
+
+logger = logging.getLogger(__name__)
 
 # ── File upload storage directory ───────────────────────────────────────────────
 
@@ -684,3 +699,175 @@ def dashboard_stats(request):
             "failed": TaskRun.objects.filter(status=TaskRun.Status.FAILED).count(),
         },
     })
+
+
+# ── Marketplace API ───────────────────────────────────────────────────────────
+
+# Module-level cache for the remote registry index (TTL from settings). Avoids
+# hitting Cloudflare on every catalog request; tests reset this directly.
+_INDEX_CACHE: dict = {"fetched_at": 0.0, "data": None}
+
+
+def _fetch_marketplace_index() -> dict | None:
+    """Fetch the remote marketplace index.json with a simple TTL cache.
+
+    Returns the parsed index dict, or ``None`` if the registry is unreachable
+    or returns invalid JSON.
+    """
+    ttl = getattr(settings, "BIOCRAFT_MARKETPLACE_CACHE_TTL", 300)
+    now = time.time()
+    if _INDEX_CACHE["data"] is not None and now - _INDEX_CACHE["fetched_at"] < ttl:
+        return _INDEX_CACHE["data"]
+
+    url = getattr(settings, "BIOCRAFT_MARKETPLACE_INDEX_URL", "")
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 — trusted configured URL
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        logger.exception("Failed to fetch marketplace index from %s", url)
+        return None
+
+    _INDEX_CACHE["fetched_at"] = now
+    _INDEX_CACHE["data"] = data
+    return data
+
+
+@require_http_methods(["GET"])
+def marketplace_catalog(request):
+    """GET /api/marketplace/catalog/ — remote plugin catalog, enriched with local install state.
+
+    Each plugin from the registry is annotated with:
+      - ``installed_version``: version on disk (shipped default or marketplace-installed), else null
+      - ``managed``: True only if installed via marketplace (has an InstalledPlugin row);
+        shipped defaults are installed but not managed (not uninstallable).
+    """
+    index = _fetch_marketplace_index()
+    if index is None:
+        return JsonResponse({"error": "Marketplace registry unreachable"}, status=502)
+
+    plugins_dir = getattr(settings, "BIOCRAFT_PLUGINS_DIR", None)
+    disk: dict[str, str] = {}  # name -> version for plugins present on disk
+    if plugins_dir:
+        for spec in discover_plugins(plugins_dir):
+            disk[spec.name] = spec.version
+    managed = {ip.name: ip for ip in InstalledPlugin.objects.all()}
+
+    enriched: list[dict] = []
+    for p in index.get("plugins", []):
+        name = p.get("name", "")
+        if name in disk:
+            installed_version: str | None = disk[name]
+        elif name in managed:
+            installed_version = managed[name].version
+        else:
+            installed_version = None
+        enriched.append({
+            **p,
+            "installed_version": installed_version,
+            "managed": name in managed,
+        })
+
+    return JsonResponse({
+        "schema_version": index.get("schema_version", 1),
+        "generated_at": index.get("generated_at", ""),
+        "plugins": enriched,
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def marketplace_install(request):
+    """POST /api/marketplace/install/ — download + validate + persist a plugin YAML.
+
+    Body: ``{"yaml_url": "...", "sha256": "...", "author": "...", "curated": bool}``
+    Downloads the YAML, optionally verifies its checksum, validates it via the
+    existing plugin loader, writes it to the plugins dir, and records an
+    InstalledPlugin row (which makes it managed / uninstallable).
+    """
+    try:
+        body = json.loads(request.body or b"{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    yaml_url = body.get("yaml_url", "")
+    expected_sha = body.get("sha256", "")
+    if not yaml_url or not yaml_url.startswith(("http://", "https://")):
+        return JsonResponse({"error": "Invalid yaml_url"}, status=400)
+
+    # Download the plugin manifest
+    try:
+        req = urllib.request.Request(yaml_url, headers={"Accept": "text/yaml"})
+        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
+            content = resp.read()
+    except Exception:
+        logger.exception("Failed to download plugin YAML from %s", yaml_url)
+        return JsonResponse({"error": "Failed to download plugin YAML"}, status=502)
+
+    # Optional checksum verification against the registry-published sha256
+    actual_sha = hashlib.sha256(content).hexdigest()
+    if expected_sha and actual_sha != expected_sha:
+        return JsonResponse({"error": "Checksum mismatch"}, status=400)
+
+    # Validate by loading through the existing plugin loader (write to temp first)
+    plugins_dir = Path(getattr(settings, "BIOCRAFT_PLUGINS_DIR", settings.BASE_DIR / "plugins"))
+    plugins_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("wb", suffix=".plugin.yaml", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        spec = load_plugin_file(tmp_path)
+    except Exception:
+        logger.exception("Downloaded plugin YAML failed to load")
+        return JsonResponse({"error": "Downloaded YAML is not a valid plugin"}, status=400)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+    if spec is None or not spec.name:
+        return JsonResponse({"error": "Downloaded YAML is not a valid plugin"}, status=400)
+
+    # Filename derived from the validated plugin name (not user input), with a
+    # safety check to keep it within the plugins dir.
+    name = spec.name
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+        return JsonResponse({"error": "Invalid plugin name"}, status=400)
+    dest = plugins_dir / f"{name}.plugin.yaml"
+    dest.write_bytes(content)  # discover_plugins picks this up on next /api/blocks/
+
+    InstalledPlugin.objects.update_or_create(
+        name=name,
+        defaults={
+            "version": spec.version,
+            "description": spec.description,
+            "icon": spec.icon or "process",
+            "author": body.get("author", "official"),
+            "curated": bool(body.get("curated", False)),
+            "source_url": yaml_url,
+            "sha256": actual_sha,
+        },
+    )
+    return JsonResponse({
+        "name": name,
+        "version": spec.version,
+        "installed_version": spec.version,
+        "managed": True,
+    }, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def marketplace_uninstall(request, name: str):
+    """DELETE /api/marketplace/plugins/<name>/ — remove a marketplace-installed plugin.
+
+    Only plugins with an InstalledPlugin row (i.e. installed via the marketplace)
+    can be uninstalled. Shipped defaults like fastqc are protected (404).
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+        return JsonResponse({"error": "Invalid plugin name"}, status=400)
+    deleted, _ = InstalledPlugin.objects.filter(name=name).delete()
+    if not deleted:
+        return JsonResponse({"error": "Not a marketplace-installed plugin"}, status=404)
+    plugins_dir = Path(getattr(settings, "BIOCRAFT_PLUGINS_DIR", settings.BASE_DIR / "plugins"))
+    (plugins_dir / f"{name}.plugin.yaml").unlink(missing_ok=True)
+    return JsonResponse({"name": name, "uninstalled": True})

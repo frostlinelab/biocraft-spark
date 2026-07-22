@@ -96,6 +96,15 @@ def _load_plugin_file(path: Path) -> PluginBlocksSpec | None:
     return None
 
 
+def load_plugin_file(path: str | Path) -> PluginBlocksSpec | None:
+    """Public single-file loader for external callers (e.g. marketplace install).
+
+    Thin wrapper around :func:`_load_plugin_file` so callers don't have to
+    import a private symbol. Returns ``None`` for invalid / unrecognised YAML.
+    """
+    return _load_plugin_file(Path(path))
+
+
 def _parse_blocks(
     raw_blocks: list[dict],
     plugin_name: str,

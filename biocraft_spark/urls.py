@@ -22,6 +22,9 @@ from workbench.api import (
     dashboard_stats,
     file_delete,
     file_upload,
+    marketplace_catalog,
+    marketplace_install,
+    marketplace_uninstall,
     pipeline_create,
     pipeline_detail,
     pipeline_list,
@@ -65,6 +68,10 @@ urlpatterns = [
         name="taskrun_output_download",
     ),
     path("api/task-runs/<int:pk>/workspace/", taskrun_workspace, name="taskrun_workspace"),
+    # Marketplace
+    path("api/marketplace/catalog/", marketplace_catalog, name="marketplace_catalog"),
+    path("api/marketplace/install/", marketplace_install, name="marketplace_install"),
+    path("api/marketplace/plugins/<str:name>/", marketplace_uninstall, name="marketplace_uninstall"),
     # SPA fallback: serve React index.html for any unmatched path
     re_path(r"^(?:.*)/?$", home),
 ]

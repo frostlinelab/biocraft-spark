@@ -1,14 +1,17 @@
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from biocraft_core.plugin import discover_plugins, get_all_block_specs, resolve_graph_to_task_nodes
 from biocraft_core.runtime.resources import ResourcePool, RuntimeConfig
 from biocraft_core.runtime.scheduler import TaskStatus
+
+from workbench.models import InstalledPlugin
 
 
 class DockerPingTests(TestCase):
@@ -219,3 +222,203 @@ class FastQCPluginTests(TestCase):
         self.assertEqual(tasks[0].volumes[0].container_path, "/data/input/sample.fastq")
         self.assertEqual(tasks[0].volumes[0].mode, "ro")
         self.assertEqual(tasks[0].volumes[1].container_path, "/data/output")
+
+
+# ── Marketplace API tests ─────────────────────────────────────────────────────
+
+# A minimal but valid blocks-format plugin used for install/uninstall tests.
+_TEST_PLUGIN_YAML = b"""\
+name: testplugin
+version: "0.1.0"
+description: A test plugin for marketplace tests
+icon: process
+blocks:
+  - name: run-test
+    label: Test
+    description: test block
+    icon: process
+    runtime:
+      image: hello-world:latest
+      command: ["echo", "hi"]
+      resources:
+        min_threads: 1
+        min_memory_gb: 1.0
+    inputs:
+      - name: in
+        label: In
+        type: file
+        pattern: "*.txt"
+    outputs:
+      - name: out
+        label: Out
+        type: file
+        pattern: "*.out"
+    params:
+      - name: mode
+        label: Mode
+        type: string
+        default: fast
+"""
+
+
+def _fake_urlopen(content: bytes):
+    """Return a MagicMock that behaves like urlopen()'s context manager."""
+    cm = MagicMock()
+    cm.__enter__.return_value.read.return_value = content
+    cm.__exit__.return_value = None
+    return cm
+
+
+def _reset_index_cache() -> None:
+    from workbench.api import _INDEX_CACHE
+    _INDEX_CACHE["data"] = None
+    _INDEX_CACHE["fetched_at"] = 0.0
+
+
+class MarketplaceCatalogTests(TestCase):
+    """GET /api/marketplace/catalog/ — enrichment with local install state."""
+
+    def setUp(self):
+        _reset_index_cache()
+
+    @patch("workbench.api._fetch_marketplace_index")
+    def test_catalog_enriches_installed_status(self, mock_index):
+        mock_index.return_value = {
+            "schema_version": 1,
+            "plugins": [
+                {
+                    "name": "fastqc",
+                    "version": "1.0.0",
+                    "description": "Quality control",
+                    "icon": "microscope",
+                    "author": "official",
+                    "curated": True,
+                    "yaml_url": "https://example/plugins/fastqc.plugin.yaml",
+                    "sha256": "abc",
+                },
+                {
+                    "name": "prokka",
+                    "version": "2.0.0",
+                    "description": "Annotation",
+                    "icon": "dna",
+                    "author": "official",
+                    "curated": False,
+                    "yaml_url": "https://example/plugins/prokka.plugin.yaml",
+                    "sha256": "def",
+                },
+            ],
+        }
+
+        response = self.client.get(reverse("marketplace_catalog"))
+        self.assertEqual(response.status_code, 200)
+        plugins = {p["name"]: p for p in response.json()["plugins"]}
+
+        # fastqc ships on disk → installed, but no InstalledPlugin row → not managed
+        self.assertEqual(plugins["fastqc"]["installed_version"], "1.0.0")
+        self.assertFalse(plugins["fastqc"]["managed"])
+        self.assertTrue(plugins["fastqc"]["curated"])
+
+        # prokka is neither on disk nor managed → not installed
+        self.assertIsNone(plugins["prokka"]["installed_version"])
+        self.assertFalse(plugins["prokka"]["managed"])
+
+    @patch("workbench.api._fetch_marketplace_index")
+    def test_catalog_returns_502_when_registry_unreachable(self, mock_index):
+        mock_index.return_value = None
+        response = self.client.get(reverse("marketplace_catalog"))
+        self.assertEqual(response.status_code, 502)
+
+
+class MarketplaceInstallTests(TestCase):
+    """POST install / DELETE uninstall — isolated to a temp plugins dir."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._override = override_settings(BIOCRAFT_PLUGINS_DIR=Path(self.tmp.name))
+        self._override.enable()
+        _reset_index_cache()
+
+    def tearDown(self):
+        self._override.disable()
+        self.tmp.cleanup()
+        InstalledPlugin.objects.all().delete()
+
+    @patch("workbench.api.urllib.request.urlopen")
+    def test_install_downloads_and_persists(self, mock_urlopen):
+        mock_urlopen.return_value = _fake_urlopen(_TEST_PLUGIN_YAML)
+
+        response = self.client.post(
+            reverse("marketplace_install"),
+            data={
+                "yaml_url": "https://example/plugins/testplugin.plugin.yaml",
+                "author": "tester",
+                "curated": True,
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201, response.json())
+        body = response.json()
+        self.assertEqual(body["name"], "testplugin")
+        self.assertEqual(body["version"], "0.1.0")
+        self.assertTrue(body["managed"])
+
+        # DB record created with the metadata sent in the body
+        ip = InstalledPlugin.objects.get(name="testplugin")
+        self.assertEqual(ip.version, "0.1.0")
+        self.assertTrue(ip.curated)
+        self.assertEqual(ip.author, "tester")
+        self.assertEqual(ip.source_url, "https://example/plugins/testplugin.plugin.yaml")
+
+        # YAML file written to the (temp) plugins dir
+        self.assertTrue((Path(self.tmp.name) / "testplugin.plugin.yaml").exists())
+
+    @patch("workbench.api.urllib.request.urlopen")
+    def test_install_rejects_checksum_mismatch(self, mock_urlopen):
+        mock_urlopen.return_value = _fake_urlopen(_TEST_PLUGIN_YAML)
+        response = self.client.post(
+            reverse("marketplace_install"),
+            data={
+                "yaml_url": "https://example/plugins/testplugin.plugin.yaml",
+                "sha256": "deadbeef" * 8,  # wrong checksum
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Checksum", response.json()["error"])
+        self.assertFalse(InstalledPlugin.objects.filter(name="testplugin").exists())
+
+    @patch("workbench.api.urllib.request.urlopen")
+    def test_install_rejects_invalid_yaml(self, mock_urlopen):
+        # A YAML scalar (not a mapping) → loader returns None → 400
+        mock_urlopen.return_value = _fake_urlopen(b"just a scalar string\n")
+        response = self.client.post(
+            reverse("marketplace_install"),
+            data={"yaml_url": "https://example/plugins/bad.plugin.yaml"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(InstalledPlugin.objects.filter(name="bad").exists())
+
+    def test_uninstall_removes_record_and_file(self):
+        # Seed an installed plugin directly (file + DB record).
+        (Path(self.tmp.name) / "testplugin.plugin.yaml").write_bytes(_TEST_PLUGIN_YAML)
+        InstalledPlugin.objects.create(
+            name="testplugin",
+            version="0.1.0",
+            source_url="https://example/plugins/testplugin.plugin.yaml",
+        )
+        self.assertTrue(InstalledPlugin.objects.filter(name="testplugin").exists())
+
+        response = self.client.delete(
+            reverse("marketplace_uninstall", kwargs={"name": "testplugin"})
+        )
+        self.assertEqual(response.status_code, 200, response.json())
+        self.assertFalse(InstalledPlugin.objects.filter(name="testplugin").exists())
+        self.assertFalse((Path(self.tmp.name) / "testplugin.plugin.yaml").exists())
+
+    def test_uninstall_protects_shipped_default(self):
+        # fastqc has no InstalledPlugin row → 404, even though it ships on disk.
+        response = self.client.delete(
+            reverse("marketplace_uninstall", kwargs={"name": "fastqc"})
+        )
+        self.assertEqual(response.status_code, 404)

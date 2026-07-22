@@ -56,3 +56,29 @@ class TaskRun(models.Model):
 
     def __str__(self):
         return f"Run {self.id} — {self.pipeline.name} ({self.status})"
+
+
+class InstalledPlugin(models.Model):
+    """A plugin installed from the remote marketplace registry.
+
+    Tracks marketplace-installed plugins so the UI can show install state and
+    support updates/uninstall. Plugins shipped in the repo (e.g. fastqc) live
+    on disk but have no row here — they are ``managed=False`` (not uninstallable).
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    version = models.CharField(max_length=64)
+    description = models.TextField(blank=True, default="")
+    icon = models.CharField(max_length=64, blank=True, default="process")
+    author = models.CharField(max_length=255, blank=True, default="")
+    curated = models.BooleanField(default=False)
+    source_url = models.URLField(max_length=512)
+    sha256 = models.CharField(max_length=64, blank=True, default="")
+    installed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} {self.version}"

@@ -128,6 +128,15 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 BIOCRAFT_PLUGINS_DIR = BASE_DIR / "plugins"
 
+# ── Marketplace registry ────────────────────────────────────────────────────
+# Remote plugin catalog (index.json) hosted on Cloudflare Pages. The backend
+# proxies + caches this; env-overridable so dev/tests can point at a fixture.
+BIOCRAFT_MARKETPLACE_INDEX_URL = os.environ.get(
+    "BIOCRAFT_MARKETPLACE_INDEX_URL",
+    "https://biocraft-marketplace.pages.dev/index.json",
+)
+BIOCRAFT_MARKETPLACE_CACHE_TTL = int(os.environ.get("BIOCRAFT_MARKETPLACE_CACHE_TTL", "300"))
+
 # ── File upload directory ─────────────────────────────────────────────────────
 
 BIOCRAFT_UPLOAD_DIR = BASE_DIR / "uploads"
