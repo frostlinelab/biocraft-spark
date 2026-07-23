@@ -1,122 +1,122 @@
 # Built-in Blocks Reference
 
-> Biocraft-Spark 内置积木 — 所有工作流的控制基础。
+> Built-in blocks for Biocraft-Spark — the control foundation of every workflow.
 
 ---
 
-## 概述
+## Overview
 
-内置积木是每个工作流的基础构件，由 Biocraft 运行时代码直接提供（非插件加载）。它们位于编辑器面板的 **"内置"** 分类中。
+Built-in blocks are the foundational components of every workflow, provided directly by the Biocraft runtime (not loaded from plugins). They appear under the **"Built-in"** category in the editor panel.
 
 ---
 
-## 积木列表
+## Block List
 
 ### Start
 
-| 属性 | 值 |
+| Property | Value |
 |---|---|
-| **名称** | `start` |
-| **图标** | ▶ 圆形 |
-| **用途** | 工作流入口点 |
+| **Name** | `start` |
+| **Icon** | ▶ Circle |
+| **Purpose** | Workflow entry point |
 
-**规则：**
-- 每个工作流**必须有且仅有一个** Start 积木
-- Start 积木没有输入端口
-- Start 积木有一个输出端口 `trigger`（类型：`signal`）
+**Rules:**
+- Every workflow **must have exactly one** Start block
+- The Start block has no input ports
+- The Start block has one output port `trigger` (type: `signal`)
 
-**输出端口：**
+**Output ports:**
 
-| 端口 | 类型 | 说明 |
+| Port | Type | Description |
 |---|---|---|
-| `trigger` | `signal` | 触发信号，通常连接到一个或多个处理积木 |
+| `trigger` | `signal` | Trigger signal, usually connected to one or more processing blocks |
 
 ---
 
 ### End
 
-| 属性 | 值 |
+| Property | Value |
 |---|---|
-| **名称** | `end` |
-| **图标** | ⏹ 带横线的圆形 |
-| **用途** | 工作流出口点 |
+| **Name** | `end` |
+| **Icon** | ⏹ Circle with bar |
+| **Purpose** | Workflow exit point |
 
-**规则：**
-- 一个工作流可以有**多个** End 积木（例如条件分支的不同终点）
-- End 积木有一个输入端口 `data`（类型：`signal`）
-- End 积木没有输出端口
+**Rules:**
+- A workflow can have **multiple** End blocks (e.g. different endpoints of conditional branches)
+- The End block has one input port `data` (type: `signal`)
+- The End block has no output ports
 
-**输入端口：**
+**Input ports:**
 
-| 端口 | 类型 | 说明 |
+| Port | Type | Description |
 |---|---|---|
-| `data` | `signal` | 接收上游流程完成信号 |
+| `data` | `signal` | Receives the upstream completion signal |
 
 ---
 
 ### Input
 
-| 属性 | 值 |
+| Property | Value |
 |---|---|
-| **名称** | `input` |
-| **图标** | 📥 六边形 |
-| **用途** | 文件上传源，支持拖放和文件选择器 |
+| **Name** | `input` |
+| **Icon** | 📥 Hexagon |
+| **Purpose** | File upload source, supports drag-and-drop and a file picker |
 
-**规则：**
-- Input 积木没有输入端口
-- Input 积木有一个输出端口 `files`（类型：`file`，允许多文件）
-- 支持拖放文件到节点区域，或点击使用文件选择器
-- 上传的文件会自动显示在节点内的文件列表中
-- 当连接到下游插件积木时，Biocraft 会自动计算 fan-out 并行度
+**Rules:**
+- The Input block has no input ports
+- The Input block has one output port `files` (type: `file`, multiple files allowed)
+- Supports dragging files onto the node, or clicking to use the file picker
+- Uploaded files automatically appear in the file list inside the node
+- When connected to a downstream plugin block, Biocraft automatically computes the fan-out parallelism
 
-**输出端口：**
+**Output ports:**
 
-| 端口 | 类型 | 允许多值 | 说明 |
+| Port | Type | Multiple | Description |
 |---|---|---|---|
-| `files` | `file` | ✅ | 上传的文件列表 |
+| `files` | `file` | ✅ | List of uploaded files |
 
-**参数：**
+**Parameters:**
 
-| 参数 | 类型 | 默认值 | 说明 |
+| Parameter | Type | Default | Description |
 |---|---|---|---|
-| `path` | `string` | `""` | 默认目录路径 |
-| `pattern` | `string` | `"*"` | 文件类型过滤，如 `*.fasta` |
+| `path` | `string` | `""` | Default directory path |
+| `pattern` | `string` | `"*"` | File type filter, e.g. `*.fasta` |
 
-**Fan-out 行为：**
-当 Input 有 5 个 fasta 文件连接到 Prokka 时，Prokka 节点自动展开为 5 条对齐的 lane（鱼骨结构）。每条 lane 并行处理一个文件。
+**Fan-out behavior:**
+When an Input has 5 fasta files connected to Prokka, the Prokka node automatically expands into 5 aligned lanes (fishbone structure). Each lane processes one file in parallel.
 
 ---
 
 ### End
 
-| 属性 | 值 |
+| Property | Value |
 |---|---|
-| **名称** | `end` |
-| **图标** | ⏹ 带横线的圆形 |
-| **用途** | 工作流出口，自动收集所有输出文件 |
+| **Name** | `end` |
+| **Icon** | ⏹ Circle with bar |
+| **Purpose** | Workflow exit, automatically collects all output files |
 
-**规则：**
-- 一个工作流可以有**多个** End 积木
-- End 积木有一个输入端口 `data`（类型：`signal`）
-- End 积木没有输出端口
-- **End 自动收集上游所有插件的输出文件**
-- 在 Node Inspector 中，**最后一个插件的文件会被高亮标注** ⭐
-- 中间插件的文件也会列出（可折叠）
+**Rules:**
+- A workflow can have **multiple** End blocks
+- The End block has one input port `data` (type: `signal`)
+- The End block has no output ports
+- **End automatically collects the output files of all upstream plugins**
+- In the Node Inspector, **the last plugin's files are highlighted** ⭐
+- Intermediate plugin files are also listed (collapsible)
 
-**输入端口：**
+**Input ports:**
 
-| 端口 | 类型 | 说明 |
+| Port | Type | Description |
 |---|---|---|
-| `data` | `signal` | 接收上游流程完成信号 |
+| `data` | `signal` | Receives the upstream completion signal |
 
-**Node Inspector 显示：**
+**Node Inspector display:**
 ```
 Outputs:
   ⭐ Prokka (last plugin):
      ├── genome_1.gff     12 KB
      ├── genome_1.fna      1.2 MB
      └── genome_1.faa     430 KB
-  
+
   Input (source):
      ├── genome_1.fasta    3.4 MB
      └── genome_2.fasta    4.1 MB
@@ -124,29 +124,29 @@ Outputs:
 
 ---
 
-## 典型用法
+## Typical Usage
 
-### 最小工作流
+### Minimal workflow
 
 ```
 Start ──▶ End
 ```
 
-最基本的流程，不处理任何数据，仅验证工作流引擎正常运行。
+The most basic flow — processes no data, only verifies the workflow engine runs.
 
-### 数据处理工作流
+### Data processing workflow
 
 ```
 Start ──▶ Input ──▶ [Plugin Block] ──▶ Output ──▶ End
 ```
 
-1. **Start** 触发工作流
-2. **Input** 从本地文件系统读取 `.fastq` 文件
-3. **Plugin Block**（如 FastQC）处理数据
-4. **Output** 将结果写到指定目录
-5. **End** 标记工作流完成
+1. **Start** triggers the workflow
+2. **Input** reads `.fastq` files from the local filesystem
+3. **Plugin Block** (e.g. FastQC) processes the data
+4. **Output** writes results to a specified directory
+5. **End** marks the workflow complete
 
-### 分支工作流
+### Branching workflow
 
 ```
               ┌──▶ [FastQC] ──▶ End
@@ -154,16 +154,16 @@ Start ──▶ Input ──┤
               └──▶ [Trimmomatic] ──▶ Output ──▶ End
 ```
 
-同一个输入可以分发给多个处理路径，每条路径可以有自己的 End。
+The same input can be fanned out to multiple processing paths, each with its own End.
 
 ---
 
-## 与插件积木的区别
+## Differences from Plugin Blocks
 
-| 维度 | 内置积木 | 插件积木 |
+| Dimension | Built-in blocks | Plugin blocks |
 |---|---|---|
-| **来源** | Biocraft 运行时内置 | YAML 插件文件 |
-| **运行时** | 无容器执行 | Docker 容器执行 |
-| **可配置性** | 有限的参数 | 完整的参数系统 |
-| **端口** | 固定的 control/data 端口 | 插件作者自定义 |
-| **分类** | "内置" | 插件名作为分类标题 |
+| **Source** | Built into the Biocraft runtime | YAML plugin files |
+| **Runtime** | No container execution | Docker container execution |
+| **Configurability** | Limited parameters | Full parameter system |
+| **Ports** | Fixed control/data ports | Defined by the plugin author |
+| **Category** | "Built-in" | Plugin name as the category title |

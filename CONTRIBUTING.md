@@ -1,130 +1,130 @@
 # Contributing to Biocraft-Spark
 
-欢迎贡献插件！本指南覆盖插件开发的全流程：从写 YAML 到容器镜像规范。
+Plugin contributions are welcome! This guide covers the full plugin development workflow — from writing YAML to container image requirements.
 
-> **📖 完整的插件开发文档请参阅 [docs/plugin-authoring.md](docs/plugin-authoring.md)。**
-> 内置积木的参考文档请参阅 [docs/built-in-blocks.md](docs/built-in-blocks.md)。
-
----
-
-## 目录
-
-- [快速开始](#快速开始)
-- [插件 YAML 格式](#插件-yaml-格式)
-- [标准容器路径](#标准容器路径)
-- [输入输出声明](#输入输出声明)
-- [完整示例：Prokka → Roary](#完整示例prokka--roary)
-- [容器镜像规范](#容器镜像规范)
-- [重试策略](#重试策略)
-- [本地调试](#本地调试)
+> **📖 For the complete plugin development docs, see [docs/plugin-authoring.md](docs/plugin-authoring.md).**
+> For the built-in blocks reference, see [docs/built-in-blocks.md](docs/built-in-blocks.md).
 
 ---
 
-## 快速开始
+## Table of Contents
 
-一个 Biocraft 插件就是一个 **YAML 文件**，描述一组有序的容器执行步骤。最小的插件长这样：
+- [Quick Start](#quick-start)
+- [Plugin YAML Format](#plugin-yaml-format)
+- [Standard Container Paths](#standard-container-paths)
+- [Input/Output Declarations](#inputoutput-declarations)
+- [Complete Example: Prokka → Roary](#complete-example-prokka--roary)
+- [Container Image Requirements](#container-image-requirements)
+- [Retry Policy](#retry-policy)
+- [Local Debugging](#local-debugging)
+
+---
+
+## Quick Start
+
+A Biocraft plugin is just a **YAML file** describing an ordered set of container execution steps. The smallest plugin looks like this:
 
 ```yaml
 name: hello-world
 version: "0.1"
-description: 最小示例
+description: Minimal example
 steps:
   - name: greet
     image: python:3.12-slim
     command: ["python", "-c", "print('Hello, Biocraft!')"]
 ```
 
-保存为 `hello.yaml`，在 Biocraft 中加载即可执行。
+Save it as `hello.yaml` and load it in Biocraft to run.
 
 ---
 
-## 插件 YAML 格式
+## Plugin YAML Format
 
-### 顶层字段
+### Top-level fields
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | string | ✅ | 插件名称，唯一标识 |
-| `version` | string | ✅ | 语义化版本号，如 `"1.0.0"` |
-| `description` | string | ❌ | 一句话描述插件功能 |
-| `steps` | array | ✅ | 步骤列表，至少 1 个 |
+| `name` | string | ✅ | Plugin name, unique identifier |
+| `version` | string | ✅ | Semantic version, e.g. `"1.0.0"` |
+| `description` | string | ❌ | One-line description of what the plugin does |
+| `steps` | array | ✅ | List of steps, at least 1 |
 
-### 步骤字段
+### Step fields
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | string | ✅ | 步骤名称，插件内唯一 |
-| `image` | string | ✅ | Docker 镜像，如 `biocontainers/prokka:1.14.6` |
-| `command` | array | ✅ | 容器启动命令，数组格式 |
-| `depends_on` | array | ❌ | 依赖的前置步骤名称列表 |
-| `env` | object | ❌ | 环境变量键值对 |
-| `inputs` | array | ❌ | 输入文件声明（见下文） |
-| `outputs` | array | ❌ | 输出文件声明（见下文） |
-| `retry` | object | ❌ | 重试策略 |
+| `name` | string | ✅ | Step name, unique within the plugin |
+| `image` | string | ✅ | Docker image, e.g. `biocontainers/prokka:1.14.6` |
+| `command` | array | ✅ | Container start command, in array form |
+| `depends_on` | array | ❌ | List of prerequisite step names |
+| `env` | object | ❌ | Environment variable key-value pairs |
+| `inputs` | array | ❌ | Input file declarations (see below) |
+| `outputs` | array | ❌ | Output file declarations (see below) |
+| `retry` | object | ❌ | Retry policy |
 
 ---
 
-## 标准容器路径
+## Standard Container Paths
 
-**所有插件的容器命令必须遵守以下路径约定：**
+**All plugin container commands must follow these path conventions:**
 
-| 常量 | 容器内路径 | 用途 |
+| Constant | In-container path | Purpose |
 |---|---|---|
-| `INPUT_DIR` | `/data/input` | 上游步骤筛选后的文件挂载到此 |
-| `OUTPUT_DIR` | `/data/output` | 本步骤的产出写入此目录 |
-| `SHARED_DIR` | `/data/shared` | Pipeline 级共享数据（参考基因组等） |
+| `INPUT_DIR` | `/data/input` | Files filtered from upstream steps are mounted here |
+| `OUTPUT_DIR` | `/data/output` | This step's outputs are written to this directory |
+| `SHARED_DIR` | `/data/shared` | Pipeline-level shared data (e.g. reference genomes) |
 
 ```python
 from biocraft_core import INPUT_DIR, OUTPUT_DIR, SHARED_DIR
 ```
 
-**规则很简单：从 `/data/input` 读，往 `/data/output` 写。** 文件怎么来的、怎么路由的，Biocraft 帮你搞定。
+**The rule is simple: read from `/data/input`, write to `/data/output`.** How files arrive and get routed — Biocraft handles that for you.
 
 ---
 
-## 输入输出声明
+## Input/Output Declarations
 
-这是 Biocraft 最核心的能力：**插件声明需要什么文件，Biocraft 筛选并喂给你。**
+This is Biocraft's most central capability: **plugins declare which files they need, and Biocraft filters and feeds them in.**
 
-### 输入声明 (`inputs`)
+### Input declarations (`inputs`)
 
 ```yaml
 inputs:
-  - from: prokka           # 从哪个上游 step 拿（不填 = 所有上游）
-    pattern: "*.gff"       # 文件 glob 模式
-    type: file             # "file" 或 "directory"，默认 "file"
+  - from: prokka           # Which upstream step to take from (omit = all upstream)
+    pattern: "*.gff"       # File glob pattern
+    type: file             # "file" or "directory", defaults to "file"
 ```
 
-### 输出声明 (`outputs`)
+### Output declarations (`outputs`)
 
 ```yaml
 outputs:
-  - pattern: "*.gff"       # 本步骤产出的文件模式
+  - pattern: "*.gff"       # File pattern produced by this step
     type: file
   - pattern: "*.fna"
     type: file
 ```
 
-### 工作原理
+### How it works
 
 ```
 Prokka outputs:  .gff  .gbk  .fna  .faa  .ffn  .tbl  .tsv  .log ...
                        ↓
-            Biocraft 按 Roary 的 inputs.pattern 筛选
+            Biocraft filters by Roary's inputs.pattern
                        ↓
-Roary reads:     /data/input/*.gff   ← 只有 .gff 被挂载进来
+Roary reads:     /data/input/*.gff   ← only .gff is mounted in
 ```
 
-插件开发者不需要写任何文件复制、筛选、重命名的胶水代码。
+Plugin authors do not need to write any glue code for file copying, filtering, or renaming.
 
 ---
 
-## 完整示例：Prokka → Roary
+## Complete Example: Prokka → Roary
 
 ```yaml
 name: prokka-roary-pipeline
 version: "0.1"
-description: 基因组注释 → 泛基因组分析
+description: Genome annotation → pan-genome analysis
 
 steps:
   - name: prokka
@@ -164,39 +164,39 @@ steps:
         type: directory
 ```
 
-> **注意：** Prokka 产出 10+ 种文件，但 Roary 只需要 `.gff`。通过 `inputs.pattern: "*.gff"` 声明，Biocraft 自动筛选。
+> **Note:** Prokka produces 10+ file types, but Roary only needs `.gff`. By declaring `inputs.pattern: "*.gff"`, Biocraft filters automatically.
 
 ---
 
-## 容器镜像规范
+## Container Image Requirements
 
-为了让 Biocraft 能正确执行你的步骤，容器镜像需满足：
+For Biocraft to run your steps correctly, container images must:
 
-1. **入口兼容** — 镜像的默认 `ENTRYPOINT` 不能阻塞 `command` 参数
-2. **路径约定** — 命令中读写路径使用 `/data/input` / `/data/output`
-3. **幂等性** — 相同输入多次执行应产生相同输出
-4. **退出码** — 成功返回 `0`，失败返回非 `0`
-5. **无交互** — 不要有 `prompt`、`tty` 等需要人工输入的逻辑
+1. **Entry point compatible** — the image's default `ENTRYPOINT` must not block the `command` argument
+2. **Path conventions** — read/write paths in commands use `/data/input` / `/data/output`
+3. **Idempotency** — the same input should produce the same output across runs
+4. **Exit codes** — `0` for success, non-`0` for failure
+5. **Non-interactive** — no `prompt`, `tty`, or other logic requiring manual input
 
-推荐直接使用 [BioContainers](https://biocontainers.pro/) 的官方镜像，它们已经满足以上规范。
+We recommend using official [BioContainers](https://biocontainers.pro/) images, which already meet these requirements.
 
 ---
 
-## 重试策略
+## Retry Policy
 
 ```yaml
 retry:
-  max_attempts: 3       # 最多执行次数（含首次），默认 1（不重试）
-  delay_seconds: 5.0    # 重试间隔秒数
+  max_attempts: 3       # Maximum execution attempts (including the first), default 1 (no retry)
+  delay_seconds: 5.0    # Seconds between retries
 ```
 
-重试只发生在容器执行失败（非零退出码）时。某步骤重试耗尽后，依赖它的所有下游步骤自动跳过。
+Retries only happen on container execution failure (non-zero exit code). Once a step's retries are exhausted, all downstream steps that depend on it are skipped automatically.
 
 ---
 
-## 本地调试
+## Local Debugging
 
-在提交插件之前，可以用 Python 直接验证 YAML 格式：
+Before submitting a plugin, you can validate the YAML format directly with Python:
 
 ```python
 import io
@@ -212,12 +212,12 @@ steps:
 """
 
 spec, nodes = load_plugin(io.StringIO(yaml_text))
-print(f"✅ 插件 {spec.name} v{spec.version} 校验通过")
-print(f"   共 {len(nodes)} 个步骤")
+print(f"✅ Plugin {spec.name} v{spec.version} validated")
+print(f"   {len(nodes)} step(s) total")
 
 for node in nodes:
-    deps = ", ".join(node.depends_on) if node.depends_on else "无"
-    print(f"   - {node.name} (依赖: {deps})")
+    deps = ", ".join(node.depends_on) if node.depends_on else "none"
+    print(f"   - {node.name} (depends on: {deps})")
 ```
 
-也可以在 Django 开发服务器启动后访问 `/debug/ping-plugin/` 验证插件格式。
+You can also visit `/debug/ping-plugin/` after starting the Django dev server to validate plugin format.
