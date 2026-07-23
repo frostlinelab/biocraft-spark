@@ -10,8 +10,6 @@ Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-gra
 
 ![Biocraft-Spark Dashboard](docs/assets/screenshot.png)
 
-**Status:** Phase 1 (Core Runtime) ✅ complete — Phase 2 (UI & Pipeline) 🔄 in progress.
-
 ---
 
 ## Table of Contents
