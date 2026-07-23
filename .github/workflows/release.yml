@@ -1,0 +1,44 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release notes file
+        id: notes
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          file=""
+          for f in ".github/RELEASE_NOTES_${tag}.md" ".github/RELEASE_NOTES_${tag#v}.md"; do
+            if [ -f "$f" ]; then file="$f"; break; fi
+          done
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release (from notes file)
+        if: steps.notes.outputs.file != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ steps.notes.outputs.file }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release (auto-generated notes)
+        if: steps.notes.outputs.file == ''
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
