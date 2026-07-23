@@ -16,18 +16,88 @@ Biocraft-Spark lowers the barrier to bioinformatics by wrapping professional-gra
 
 ## Table of Contents
 
+- [Get Started](#get-started)
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
 - [Plugin Format](#plugin-format)
 - [Marketplace](#marketplace)
 - [Debug Endpoints](#debug-endpoints)
 - [API Endpoints](#api-endpoints)
-- [Roadmap](#roadmap)
 - [Documentation](#documentation)
+
+---
+
+## Get Started
+
+New here? You don't need to be a developer — no git, Python, or command-line
+experience required. The installer sets up the container runtime for you. Pick
+your platform and run **one command**.
+
+### macOS
+
+1. Open **Terminal** (press <kbd>Cmd</kbd>+<kbd>Space</kbd>, type `Terminal`).
+2. Paste this and press Enter:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/frostlinelab/biocraft-spark/main/install.sh | bash
+   ```
+
+3. The installer sets up **OrbStack** if you don't already have a container
+   runtime. When the OrbStack window appears, **approve the permission
+   prompts**. On a slower Mac the first launch can take a few minutes — the
+   installer keeps checking and prints progress until OrbStack is ready.
+4. When you see the green **"Biocraft-Spark is running!"** message, open
+   **http://127.0.0.1:25568** in your browser.
+
+### Linux
+
+1. Open a terminal.
+2. Paste this and press Enter:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/frostlinelab/biocraft-spark/main/install.sh | bash
+   ```
+
+3. No Docker installed? The installer installs Docker Engine for you. It uses
+   `sudo` for Docker during this session — to drop sudo later, log out and back
+   in (or run `newgrp docker`).
+4. Open **http://127.0.0.1:25568**, or the **LAN URL** the installer prints
+   (e.g. `http://192.168.x.x:25568`) to reach Biocraft-Spark from another
+   machine on the same network.
+
+### Your first analysis
+
+1. The **Dashboard** opens by default — it's empty until you run a workflow.
+2. Open **Marketplace** in the sidebar and click **Install** on **FastQC**
+   (quality control for sequencing reads).
+3. Open the **Workflow** editor and drag these blocks onto the canvas, then
+   connect them in order:
+
+   ```
+   Start ──▶ Input ──▶ FastQC ──▶ End
+   ```
+
+4. Click the **Input** block and upload a `.fastq` (or `.fastq.gz`) file.
+5. Click **Run**. Watch the per-step progress; when it finishes, open the run
+   to download the **FastQC HTML report** and data zip (collected at the End
+   block).
+
+### Stop, restart, or update
+
+```bash
+cd ~/.biocraft-spark
+./install.sh stop        # stop the server
+./install.sh restart     # restart it
+./install.sh logs        # view logs (Ctrl+C to exit)
+```
+
+To **update** later, just re-run the one-line install command — it pulls the
+latest image.
+
+Hit a snag? See the [troubleshooting guide](docs/troubleshooting.md).
 
 ---
 
@@ -94,77 +164,14 @@ The backend container mounts the host Docker socket (`/var/run/docker.sock`) so 
 
 ## Prerequisites
 
-- **Docker** (Desktop, Engine, or OrbStack) running on the host
+- **A container runtime** — the installer provisions this automatically:
+  - **Linux:** installs Docker Engine via `get.docker.com` if missing
+  - **macOS:** installs **OrbStack** if missing (the required runtime on macOS — see [troubleshooting](docs/troubleshooting.md))
+- **curl** (preinstalled on macOS and almost every Linux distro)
 
-> No Python or Node.js required — the Docker image is self-contained.
-> Python 3.12+ and Node.js 20+ are only needed for development outside Docker.
-
----
-
-## Getting Started
-
-### Quick Start (recommended)
-
-```bash
-./install.sh
-```
-
-Pulls the pre-built image from GHCR and starts the server at `http://127.0.0.1:25568`. The Docker socket is mounted automatically so the runtime can execute workflow containers.
-
-### Build from source
-
-```bash
-./install.sh --build
-```
-
-Builds the Docker image locally — the multi-stage Dockerfile compiles the frontend inside Docker, so **no host Node.js or Python is required**.
-
-### Development mode
-
-For live backend reload and frontend hot-reload:
-
-```bash
-# Terminal 1 — backend (Django with live reload)
-./install.sh --dev
-
-# Terminal 2 — frontend (Vite dev server)
-cd frontend
-npm install
-VITE_BIOCRAFT_API_BASE=http://localhost:25568 npm run dev
-```
-
-### Other commands
-
-```bash
-./install.sh stop       # Stop the server
-./install.sh restart    # Restart the server
-./install.sh logs       # Tail logs (Ctrl+C to exit)
-./install.sh status     # Show container status
-./install.sh --help     # Show all options
-```
-
-### Manual setup (advanced, without Docker)
-
-<details>
-<summary>Local venv + manual frontend build</summary>
-
-```bash
-# Backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-
-# Frontend (build to dist/, served by Django)
-cd frontend
-npm install
-npm run build      # type-check + vite build → dist/
-```
-
-</details>
-
-> **Tip:** The `frontend/` folder has its own [README](frontend/README.md) with frontend-specific notes.
+> No git, Xcode/Command Line Tools, Python, or Node.js required — the installer
+> fetches only `docker-compose.standalone.yml` and pulls the pre-built image.
+> Python 3.12+ and Node.js 20+ are only needed for development from source.
 
 ---
 
@@ -240,7 +247,7 @@ Biocraft-Spark ships with a built-in **Marketplace** for browsing, installing, a
 - **Install** a plugin with one click — the backend downloads the manifest, verifies its SHA-256, validates it against the plugin schema, writes it to `plugins/`, and records it. The new block appears in the workflow editor after a page refresh.
 - **Uninstall** marketplace-installed plugins at any time. Biocraft-Spark ships with no built-in bioinformatics tools — every plugin is user-installed and removable.
 
-The registry lives in a separate public repository, [**biocraft-marketplace**](https://github.com/frostlinelab/biocraft-marketplace), statically hosted on Cloudflare Pages. **Curation equals certification**: a plugin enters the registry only after its code has been reviewed, and those promoted to the *Beautiful Creatures* selection are listed in the registry's `beautiful-creatures.txt` allowlist.
+The registry lives in a separate public repository, [**biocraft-marketplace**](https://github.com/frostlinelab/biocraft-marketplace), statically hosted on Cloudflare Pages. **Curation equals certification**: a plugin enters the registry only after its code has been reviewed, and those promoted to the *Beautiful Creatures* selection are listed in the registry's `beautiful-creatures.txt` allowlist. The catalog is actively growing as new plugins are reviewed and added.
 
 The backend proxies and caches the remote `index.json` (5-minute TTL) and enriches each entry with local install state. Override the registry URL with the `BIOCRAFT_MARKETPLACE_INDEX_URL` environment variable. See [API Endpoints](#api-endpoints) for the marketplace API.
 
@@ -280,17 +287,6 @@ REST API for the workflow frontend:
 
 ---
 
-## Roadmap
-
-| Phase | Scope | Status |
-|---|---|---|
-| **1 — Core Runtime** | Container executor · DAG scheduler · Retry policy · Plugin format (YAML + JSON Schema) | ✅ Complete |
-| **2 — Django UI & Pipeline** | Django REST API · Visual workflow editor (React Flow) · Web SPA frontend · Multi-workflow management · Task run tracking | 🔄 In progress |
-| **3 — Plugin Ecosystem** | Plugin SDK · Official plugins (FastQC, Prokka, Roary, … — all via Marketplace) ✅ · Plugin marketplace ✅ | 🔄 In progress |
-| **4 — Cloud / Business** | Remote execution · Task queue · Enterprise auth · Cloud rebuild (Rust + Dioxus post-1.0) | ⏳ Planned |
-
----
-
 ## Documentation
 
 | Document | Description |
@@ -303,7 +299,7 @@ REST API for the workflow frontend:
 
 ## Contributing
 
-This project is developed by **Frostline Lab**. See [CONTRIBUTING.md](CONTRIBUTING.md) for the plugin development guide.
+This project is developed by **Frostline Lab**. To run from source, clone the repo and run `./install.sh --help` (lists `--build`, `--dev`, and management commands); for frontend hot-reload see [frontend/README.md](frontend/README.md). For the plugin development guide, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
