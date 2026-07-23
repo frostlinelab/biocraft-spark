@@ -44,3 +44,4 @@ tests
 run.sh
 install.sh
 docker-compose.dev.yml
+docker-compose.standalone.yml

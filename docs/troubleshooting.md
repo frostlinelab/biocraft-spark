@@ -6,11 +6,64 @@ Biocraft-Spark 常见问题及解决方法。
 
 ## 目录
 
+- [容器运行时（必需）](#容器运行时必需)
+- [数据库与启动](#数据库与启动)
 - [Docker 相关](#docker-相关)
 - [容器执行相关](#容器执行相关)
 - [插件加载相关](#插件加载相关)
 - [调度器相关](#调度器相关)
 - [诊断端点](#诊断端点)
+
+---
+
+## 容器运行时（必需）
+
+> **Biocraft-Spark 必须依赖容器运行时才能运行。** 没有容器运行时，工作流无法执行，应用不可用。
+
+### macOS：必须使用 OrbStack
+
+macOS 上推荐且由安装脚本自动安装的运行时是 **OrbStack**（Docker Desktop 也可用，但若已存在则脚本不会覆盖）。
+
+`install.sh` 在 macOS 上的行为：
+
+1. 若 `/Applications/OrbStack.app` 已存在 → 直接启动。
+2. 否则，若安装了 Homebrew → `brew install --cask orbstack`。
+3. 否则（**无 Homebrew、无 Xcode/CLT、无 git 也能装**）→ 从 Homebrew cask API 解析最新版 `.dmg`，下载后挂载拷贝到 `/Applications`。
+4. `open -a OrbStack` 启动，首启需在 GUI 批准权限；脚本每 5s 轮询 `docker info` 直到就绪（**无固定超时，慢机也能等到**），每 15s 打印一次进度心跳。若 OrbStack 进程退出或 60s 内未启动则提前报错，不会无限卡死。
+5. 尽力通过 `osascript` 把 OrbStack 加入登录项实现**开机自启**。
+
+**开机自启未生效？** 脚本的 `osascript` 可能因自动化权限被系统拒绝。手动开启：打开 OrbStack → Settings → 勾选 "Start OrbStack at login"（或在 系统设置 → 通用 → 登录项 中确认 OrbStack 已列出）。
+
+### Linux：自动安装 Docker Engine
+
+无 Docker 时，`install.sh` 通过 `get.docker.com` 安装 Docker Engine 并 `systemctl enable --now docker`，同时把当前用户加入 `docker` 组。
+
+> 加入 `docker` 组在**当前 shell 不会立即生效**。安装脚本在本会话内用 `sudo` 调用 docker；要让普通用户免 sudo，请**注销后重新登录**（或立即执行 `newgrp docker`）。
+
+---
+
+## 数据库与启动
+
+### Dashboard / Marketplace 报错，但 Health 全绿
+
+症状：Health 页面四项全绿，但 Dashboard 显示 "Failed to load dashboard data"、Marketplace 显示 "Failed to load marketplace catalog"。
+
+**原因：** 这四个 Health 端点（`/debug/ping-*`）不查数据库，而 Dashboard（`/api/dashboard-stats/`）和 Marketplace（`/api/marketplace/catalog/`）都要查 SQLite。若数据库表未建，DB 端点返回 500，Health 仍正常。
+
+**解决：** Beta2 的容器入口点会在每次启动时自动执行 `python manage.py migrate`，正常情况下无需手动操作。若使用旧镜像或入口点被绕过，手动迁移：
+
+```bash
+cd ~/.biocraft-spark            # 仓库安装则 cd 到仓库目录
+./install.sh restart            # 重启会触发入口点自动 migrate
+# 仍不行则显式执行：
+docker compose -f docker-compose.standalone.yml exec web python manage.py migrate
+```
+
+> Marketplace 还要求容器能出站访问 `https://biocraft-marketplace.pages.dev`（Cloudflare Pages）。若 migrate 后 Marketplace 仍返回 502 "Marketplace registry unreachable"，检查容器外网连通：
+> ```bash
+> docker compose -f docker-compose.standalone.yml exec web \
+>   curl -sI https://biocraft-marketplace.pages.dev/index.json
+> ```
 
 ---
 
@@ -59,14 +112,23 @@ DockerUnavailableError: Docker daemon is unavailable. Check Docker socket mount.
 
 ### macOS：Docker socket 路径不同
 
-如果你用的是 **OrbStack**，socket 路径可能是：
+不同运行时的 socket 路径不一样：
 
 ```
-/var/run/docker.sock          # Docker Desktop
-/Users/<user>/.orbstack/run/docker.sock  # OrbStack
+/var/run/docker.sock                       # Docker Desktop / Linux
+/Users/<user>/.orbstack/run/docker.sock    # OrbStack
 ```
 
-修改 `docker-compose.yml` 中的挂载路径即可。
+`install.sh` 会自动检测并导出 `DOCKER_SOCK`，`docker-compose.yml` 与
+`docker-compose.standalone.yml` 都通过 `${DOCKER_SOCK:-/var/run/docker.sock}`
+引用，因此**正常情况下无需手动改挂载路径**。
+
+若手动 `docker compose up` 且 socket 不在默认位置，显式指定即可：
+
+```bash
+export DOCKER_SOCK="$HOME/.orbstack/run/docker.sock"
+docker compose -f docker-compose.standalone.yml up -d
+```
 
 ---
 

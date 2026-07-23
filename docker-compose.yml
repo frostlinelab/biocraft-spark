@@ -8,8 +8,10 @@ services:
     ports:
       - "25568:25568"
     volumes:
-      # Docker socket — lets the runtime spawn sibling containers (Docker-out-of-Docker)
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker socket — lets the runtime spawn sibling containers (Docker-out-of-Docker).
+      # DOCKER_SOCK is auto-detected by install.sh (Linux/Docker Desktop/OrbStack);
+      # defaults to the standard path so manual `docker compose up` still works.
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
       # Persistent data (selective bind mounts — image code/frontend stays self-contained)
       - ./uploads:/app/uploads
       - ./plugins:/app/plugins

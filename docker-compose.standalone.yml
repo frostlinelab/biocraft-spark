@@ -1,0 +1,36 @@
+# Standalone deployment profile — for end users who install via the one-line
+# curl installer (no git clone, no repo checkout). Fetched directly by
+# install.sh from:
+#   https://raw.githubusercontent.com/frostlinelab/biocraft-spark/main/docker-compose.standalone.yml
+#
+# Differences from docker-compose.yml (the dev/source profile):
+#   - No `build:` section — remote users can't build from source; they always
+#     pull the pre-built multi-arch image from GHCR.
+#   - Docker socket path is parameterized via DOCKER_SOCK (auto-detected by
+#     install.sh), so the same file works on Linux, Docker Desktop, and
+#     OrbStack without editing bind mounts.
+#   - restart: unless-stopped — survives host reboots on server installs.
+#
+# The image's entrypoint runs `manage.py migrate` on every start, so a freshly
+# created (empty) db.sqlite3 is migrated automatically — no manual step.
+services:
+  web:
+    image: ghcr.io/frostlinelab/biocraft-spark:latest
+    container_name: biocraft-spark-web
+    ports:
+      - "25568:25568"
+    volumes:
+      # Docker socket — lets the runtime spawn sibling containers (Docker-out-of-Docker).
+      # DOCKER_SOCK is auto-detected by install.sh (Linux/Docker Desktop/OrbStack).
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+      # Persistent data (selective bind mounts — image code/frontend stay self-contained)
+      - ./uploads:/app/uploads
+      - ./plugins:/app/plugins
+      - ./run_outputs:/app/run_outputs
+      - ./db.sqlite3:/app/db.sqlite3
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      # Docker bind mounts are resolved by the host daemon, not this container.
+      # install.sh runs compose from the install dir, so ${PWD} is the project root.
+      BIOCRAFT_DOCKER_HOST_PROJECT_DIR: ${BIOCRAFT_DOCKER_HOST_PROJECT_DIR:-${PWD}}
+    restart: unless-stopped

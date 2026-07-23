@@ -32,6 +32,11 @@ COPY . /app/
 # Overlay the built frontend from stage 1 (takes precedence over any host dist)
 COPY --from=frontend-builder /build/dist /app/frontend/dist
 
+# Entrypoint runs DB migrations before the server starts, so a freshly
+# bind-mounted (empty) db.sqlite3 is schema-ready without a manual migrate.
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 EXPOSE 25568
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:25568"]
