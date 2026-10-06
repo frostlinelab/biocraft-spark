@@ -324,3 +324,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+<p align="center">
+  <a href="https://frostlinelab.pages.dev"><img src="https://raw.githubusercontent.com/frostlinelab/.github/main/site/assets/logos/biocraft-spark.svg" alt="" width="28" height="28"></a><br>
+  <sub>Part of <a href="https://frostlinelab.pages.dev">Frostline Lab</a> · <a href="https://frostlinelab.pages.dev/gallery.html#biocraft-spark">All projects</a></sub>
+</p>
